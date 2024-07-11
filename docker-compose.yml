@@ -19,16 +19,16 @@ services:
     networks:
       - rdf-network
 
-  yasgui:
-    image: redpencil/yasgui:latest
-    container_name: yasgui
-    environment:
-      - DEFAULT_SPARQL_ENDPOINT=http://localhost/sparql
-      - PORT=80
-    ports:
-      - "8084:80"
-    networks:
-      - rdf-network
+  # yasgui:
+  #   image: redpencil/yasgui:latest
+  #   container_name: yasgui
+  #   environment:
+  #     - DEFAULT_SPARQL_ENDPOINT=http://localhost/sparql
+  #     - PORT=80
+  #   ports:
+  #     - "8084:80"
+  #   networks:
+  #     - rdf-network
 
   webvowl:
     image: webvowl:v1
