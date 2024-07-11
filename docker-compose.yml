@@ -1,0 +1,46 @@
+services:
+  blazegraph:
+    image: lyrasis/blazegraph:2.1.5
+    container_name: blazegraph
+    ports:
+      - "9999:8080"
+    networks:
+      - rdf-network
+    volumes:
+      - blazegraph_data:/var/lib/blazegraph
+
+  rdf4j:
+    image: eclipse/rdf4j-workbench:5.0.1
+    container_name: rdf4j
+    ports:
+      - "8082:8080"
+    depends_on:
+      - blazegraph
+    networks:
+      - rdf-network
+
+  yasgui:
+    image: redpencil/yasgui:latest
+    container_name: yasgui
+    environment:
+      - DEFAULT_SPARQL_ENDPOINT=http://localhost/sparql
+      - PORT=80
+    ports:
+      - "8084:80"
+    networks:
+      - rdf-network
+
+  webvowl:
+    image: webvowl:v1
+    container_name: webvowl
+    ports:
+      - "8083:8080"
+    networks:
+      - rdf-network
+
+networks:
+  rdf-network:
+
+volumes:
+  blazegraph_data:
+
