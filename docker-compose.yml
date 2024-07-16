@@ -19,16 +19,15 @@ services:
     networks:
       - rdf-network
 
-  # yasgui:
-  #   image: redpencil/yasgui:latest
-  #   container_name: yasgui
-  #   environment:
-  #     - DEFAULT_SPARQL_ENDPOINT=http://localhost/sparql
-  #     - PORT=80
-  #   ports:
-  #     - "8084:80"
-  #   networks:
-  #     - rdf-network
+  refine:
+    image: ontotext/refine
+    restart: unless-stopped
+    ports:
+      - "7333:7333"
+    volumes:
+      - refine_data:/opt/ontorefine/data
+    networks:
+      - rdf-network
 
   webvowl:
     image: webvowl:v1
@@ -43,4 +42,5 @@ networks:
 
 volumes:
   blazegraph_data:
+  refine_data:
 
