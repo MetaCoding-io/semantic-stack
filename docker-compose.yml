@@ -19,8 +19,9 @@ services:
     networks:
       - rdf-network
 
-  refine:
+  ontorefine:
     image: ontotext/refine
+    container_name: ontorefine
     restart: unless-stopped
     ports:
       - "7333:7333"
@@ -30,10 +31,38 @@ services:
       - rdf-network
 
   webvowl:
-    image: webvowl:v1
+    image: metacodingio/webvowl:v1
     container_name: webvowl
     ports:
       - "8083:8080"
+    networks:
+      - rdf-network
+
+  # docker run --rm -it -p 8080:8080 ghcr.io/zazuko/trifid:latest
+  # Write docker-compose service entry to replicate the above docker command
+  trifid:
+    image: ghcr.io/zazuko/trifid:latest
+    container_name: trifid
+    ports:
+      - "8084:8080"
+    environment:
+      - SPARQL_ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
+      # - DATASET_BASE_URL: the base URL to use to enable rewriting
+      # - SPARQL_USER: the user to use to authenticate against the SPARQL endpoint
+      # - SPARQL_PASSWORD: the password to use to authenticate against the SPARQL endpoint
+    networks:
+      - rdf-network
+
+  # docker pull ghcr.io/zazuko/blueprint:latest
+  blueprint:
+    image: ghcr.io/zazuko/blueprint:latest
+    container_name: blueprint
+    ports:
+      - "8085:80"
+    environment:
+      - ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
+      - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
+      - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
     networks:
       - rdf-network
 

@@ -1,0 +1,3 @@
+[submodule "WebVOWL"]
+	path = WebVOWL
+	url = git@github.com:MetaCoding-io/WebVOWL.git
