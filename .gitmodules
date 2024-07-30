@@ -1,3 +1,12 @@
 [submodule "WebVOWL"]
 	path = WebVOWL
 	url = git@github.com:MetaCoding-io/WebVOWL.git
+[submodule "surfrdf"]
+	path = surfrdf
+	url = git@github.com:MetaCoding-io/surfrdf.git
+[submodule "rdflib-orm"]
+	path = rdflib-orm
+	url = git@github.com:MetaCoding-io/rdflib-orm.git
+[submodule "blueprint"]
+	path = blueprint
+	url = git@github.com:zazuko/blueprint.git

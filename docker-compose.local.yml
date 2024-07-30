@@ -5,9 +5,10 @@ services:
     ports:
       - "9999:8080"
     networks:
-      - rdf-network
+      - monorepo_default
     volumes:
       - blazegraph_data:/var/lib/blazegraph
+      - ./data:/data
 
   rdf4j:
     image: eclipse/rdf4j-workbench:5.0.1
@@ -17,7 +18,7 @@ services:
     depends_on:
       - blazegraph
     networks:
-      - rdf-network
+      - monorepo_default
 
   ontorefine:
     image: ontotext/refine
@@ -28,7 +29,7 @@ services:
     volumes:
       - refine_data:/opt/ontorefine/data
     networks:
-      - rdf-network
+      - monorepo_default
 
   openrefine:
     image: easypi/openrefine
@@ -45,7 +46,7 @@ services:
       - REFINE_EXTRA_OPTS=refine.headless=true
     restart: unless-stopped
     networks:
-      - rdf-network
+      - monorepo_default
 
   webvowl:
     image: metacodingio/webvowl:v1
@@ -53,10 +54,8 @@ services:
     ports:
       - "8083:8080"
     networks:
-      - rdf-network
+      - monorepo_default
 
-  # docker run --rm -it -p 8080:8080 ghcr.io/zazuko/trifid:latest
-  # Write docker-compose service entry to replicate the above docker command
   trifid:
     image: ghcr.io/zazuko/trifid:latest
     container_name: trifid
@@ -64,29 +63,28 @@ services:
       - "8084:8080"
     environment:
       - SPARQL_ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
-      # - DATASET_BASE_URL: the base URL to use to enable rewriting
-      # - SPARQL_USER: the user to use to authenticate against the SPARQL endpoint
-      # - SPARQL_PASSWORD: the password to use to authenticate against the SPARQL endpoint
+      - SPARQL_USERNAME=admin
+      - SPARQL_PASSWORD=admin
     networks:
-      - rdf-network
+      - monorepo_default
 
-  # docker pull ghcr.io/zazuko/blueprint:latest
   blueprint:
     image: ghcr.io/zazuko/blueprint:latest
     container_name: blueprint
     ports:
       - "8085:80"
     environment:
-      - ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
-      - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
-      - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
+      - ENDPOINT_URL=http://0.0.0.0:8084/query
+      # - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
+      # - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
     networks:
-      - rdf-network
+      - monorepo_default
 
 networks:
-  rdf-network:
+  monorepo_default:
+    external: true
 
 volumes:
   blazegraph_data:
   refine_data:
-
+  openrefine_data:
