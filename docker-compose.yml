@@ -1,16 +1,19 @@
 services:
   # === Triple Stores ===
 
-  # Oxigraph - Modern Rust-based RDF triplestore with built-in YASGUI UI
-  # SPARQL endpoint: http://oxigraph:7878/query (query) / http://oxigraph:7878/update (update)
-  oxigraph:
-    image: oxigraph/oxigraph:latest
-    container_name: oxigraph
+  # QLever - High-performance SPARQL engine (handles Wikidata-scale datasets)
+  # SPARQL endpoint: http://qlever:7001 (POST queries directly)
+  # Built-in UI at http://localhost:7001
+  # Requires indexing before first use - see README for setup instructions
+  qlever:
+    image: adfreiburg/qlever:latest
+    container_name: qlever
     ports:
-      - "7878:7878"
+      - "7001:7001"
     volumes:
-      - oxigraph_data:/data
-    command: serve --location /data --bind 0.0.0.0:7878
+      - qlever_data:/data
+    environment:
+      - INDEX_PREFIX=index
     restart: unless-stopped
     networks:
       - rdf-network
@@ -30,18 +33,6 @@ services:
     restart: unless-stopped
     networks:
       - rdf-network
-
-  # QLever - High-performance SPARQL engine (Wikidata-scale)
-  # Requires data indexing before use. See README for setup instructions.
-  # qlever:
-  #   image: adfreiburg/qlever:latest
-  #   container_name: qlever
-  #   ports:
-  #     - "7001:7001"
-  #   volumes:
-  #     - qlever_data:/data
-  #   networks:
-  #     - rdf-network
 
   # === Repository Management ===
 
@@ -107,10 +98,7 @@ services:
     ports:
       - "8084:8080"
     environment:
-      - SPARQL_ENDPOINT_URL=http://oxigraph:7878/query
-      # - DATASET_BASE_URL: the base URL to use to enable rewriting
-      # - SPARQL_USER: the user to use to authenticate against the SPARQL endpoint
-      # - SPARQL_PASSWORD: the password to use to authenticate against the SPARQL endpoint
+      - SPARQL_ENDPOINT_URL=http://qlever:7001
     networks:
       - rdf-network
 
@@ -121,7 +109,7 @@ services:
     ports:
       - "8085:80"
     environment:
-      - ENDPOINT_URL=http://oxigraph:7878/query
+      - ENDPOINT_URL=http://qlever:7001
       - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
       - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
     networks:
@@ -136,18 +124,17 @@ services:
     ports:
       - "8086:80"
     environment:
-      - DEFAULT_SPARQL_ENDPOINT=http://localhost:7878/query
+      - DEFAULT_SPARQL_ENDPOINT=http://localhost:7001
     networks:
       - rdf-network
 
   # Comunica - Federated SPARQL query engine for querying across multiple endpoints
-  # Exposes a SPARQL endpoint that federates queries across configured sources
   comunica:
     image: comunica/query-sparql:latest
     container_name: comunica
     ports:
       - "8087:8080"
-    command: http --port 8080 http://oxigraph:7878/query http://fuseki:3030/ds/sparql
+    command: http --port 8080 http://qlever:7001 http://fuseki:3030/ds/sparql
     restart: unless-stopped
     networks:
       - rdf-network
@@ -166,7 +153,7 @@ networks:
   rdf-network:
 
 volumes:
-  oxigraph_data:
+  qlever_data:
   fuseki_data:
   refine_data:
   openrefine_data:

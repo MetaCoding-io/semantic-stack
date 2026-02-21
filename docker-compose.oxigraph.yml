@@ -1,23 +1,23 @@
-services:
-  # === Triple Stores ===
+## Alternative stack using Oxigraph as the primary triplestore.
+## Usage: docker compose -f docker-compose.oxigraph.yml up -d
+## Oxigraph is a lightweight Rust-based triplestore - no indexing step required.
 
-  # QLever - High-performance SPARQL engine (handles Wikidata-scale datasets)
-  # SPARQL endpoint: http://qlever:7001 (POST queries directly)
-  # Built-in UI at http://localhost:7001
-  # Requires indexing before first use - see README for setup instructions
-  qlever:
-    image: adfreiburg/qlever:latest
-    container_name: qlever
+services:
+  # === Triple Store ===
+
+  # Oxigraph - Modern Rust-based RDF triplestore with built-in YASGUI UI
+  # SPARQL endpoint: http://oxigraph:7878/query (query) / http://oxigraph:7878/update (update)
+  oxigraph:
+    image: oxigraph/oxigraph:latest
+    container_name: oxigraph
     ports:
-      - "7001:7001"
+      - "7878:7878"
     volumes:
-      - qlever_data:/data
-      - ./data:/import
-    environment:
-      - INDEX_PREFIX=index
+      - oxigraph_data:/data
+    command: serve --location /data --bind 0.0.0.0:7878
     restart: unless-stopped
     networks:
-      - monorepo_default
+      - rdf-network
 
   # Apache Jena Fuseki - Mature SPARQL 1.1 server with TDB2 storage and reasoning
   # SPARQL endpoint: http://fuseki:3030/ds/sparql
@@ -33,7 +33,7 @@ services:
       - ADMIN_PASSWORD=admin
     restart: unless-stopped
     networks:
-      - monorepo_default
+      - rdf-network
 
   # === Repository Management ===
 
@@ -43,7 +43,7 @@ services:
     ports:
       - "8082:8080"
     networks:
-      - monorepo_default
+      - rdf-network
 
   # === Data Transformation ===
 
@@ -56,7 +56,7 @@ services:
     volumes:
       - refine_data:/opt/ontorefine/data
     networks:
-      - monorepo_default
+      - rdf-network
 
   openrefine:
     image: felixlohmeier/openrefine:3.5.0
@@ -68,10 +68,10 @@ services:
     command: -i 0.0.0.0 -d /data -m 1024M
     restart: unless-stopped
     networks:
-      - monorepo_default
+      - rdf-network
 
   # RML Mapper - Convert structured data (CSV, JSON, XML) to RDF using RML mappings
-  # Usage: docker compose -f docker-compose.local.yml run --rm rmlmapper -m /data/mapping.ttl
+  # Usage: docker compose -f docker-compose.oxigraph.yml run --rm rmlmapper -m /data/mapping.ttl
   rmlmapper:
     image: rmlio/rmlmapper-java:v7.3.3
     container_name: rmlmapper
@@ -80,7 +80,7 @@ services:
     profiles:
       - tools
     networks:
-      - monorepo_default
+      - rdf-network
 
   # === Visualization & Browsing ===
 
@@ -90,7 +90,7 @@ services:
     ports:
       - "8083:8080"
     networks:
-      - monorepo_default
+      - rdf-network
 
   # Trifid - Linked Data proxy with built-in Graph Explorer (Zazuko)
   trifid:
@@ -99,11 +99,9 @@ services:
     ports:
       - "8084:8080"
     environment:
-      - SPARQL_ENDPOINT_URL=http://qlever:7001
-      - SPARQL_USERNAME=admin
-      - SPARQL_PASSWORD=admin
+      - SPARQL_ENDPOINT_URL=http://oxigraph:7878/query
     networks:
-      - monorepo_default
+      - rdf-network
 
   # Blueprint - Knowledge graph browser (Zazuko)
   blueprint:
@@ -112,11 +110,11 @@ services:
     ports:
       - "8085:80"
     environment:
-      - ENDPOINT_URL=http://0.0.0.0:8084/query
-      # - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
-      # - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
+      - ENDPOINT_URL=http://oxigraph:7878/query
+      - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
+      - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
     networks:
-      - monorepo_default
+      - rdf-network
 
   # === Query Tools ===
 
@@ -127,9 +125,9 @@ services:
     ports:
       - "8086:80"
     environment:
-      - DEFAULT_SPARQL_ENDPOINT=http://localhost:7001
+      - DEFAULT_SPARQL_ENDPOINT=http://localhost:7878/query
     networks:
-      - monorepo_default
+      - rdf-network
 
   # Comunica - Federated SPARQL query engine for querying across multiple endpoints
   comunica:
@@ -137,17 +135,16 @@ services:
     container_name: comunica
     ports:
       - "8087:8080"
-    command: http --port 8080 http://qlever:7001 http://fuseki:3030/ds/sparql
+    command: http --port 8080 http://oxigraph:7878/query http://fuseki:3030/ds/sparql
     restart: unless-stopped
     networks:
-      - monorepo_default
+      - rdf-network
 
 networks:
-  monorepo_default:
-    external: true
+  rdf-network:
 
 volumes:
-  qlever_data:
+  oxigraph_data:
   fuseki_data:
   refine_data:
   openrefine_data:
