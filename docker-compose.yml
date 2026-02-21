@@ -1,23 +1,50 @@
 services:
-  blazegraph:
-    image: lyrasis/blazegraph:2.1.5
-    container_name: blazegraph
+  # === Triple Stores ===
+
+  # QLever - High-performance SPARQL engine (handles Wikidata-scale datasets)
+  # SPARQL endpoint: http://qlever:7001 (POST queries directly)
+  # Built-in UI at http://localhost:7001
+  # Requires indexing before first use - see README for setup instructions
+  qlever:
+    image: adfreiburg/qlever:latest
+    container_name: qlever
     ports:
-      - "9999:8080"
+      - "7001:7001"
+    volumes:
+      - qlever_data:/data
+    environment:
+      - INDEX_PREFIX=index
+    restart: unless-stopped
     networks:
       - rdf-network
+
+  # Apache Jena Fuseki - Mature SPARQL 1.1 server with TDB2 storage and reasoning
+  # SPARQL endpoint: http://fuseki:3030/ds/sparql
+  # Admin UI at http://localhost:3030 (admin/admin)
+  fuseki:
+    image: secoresearch/fuseki:5.5.0
+    container_name: fuseki
+    ports:
+      - "3030:3030"
     volumes:
-      - blazegraph_data:/var/lib/blazegraph
+      - fuseki_data:/fuseki
+    environment:
+      - ADMIN_PASSWORD=admin
+    restart: unless-stopped
+    networks:
+      - rdf-network
+
+  # === Repository Management ===
 
   rdf4j:
-    image: eclipse/rdf4j-workbench:5.0.1
+    image: eclipse/rdf4j-workbench:5.2.2
     container_name: rdf4j
     ports:
       - "8082:8080"
-    depends_on:
-      - blazegraph
     networks:
       - rdf-network
+
+  # === Data Transformation ===
 
   ontorefine:
     image: ontotext/refine
@@ -31,21 +58,30 @@ services:
       - rdf-network
 
   openrefine:
-    image: easypi/openrefine
+    image: felixlohmeier/openrefine:3.5.0
+    container_name: openrefine
     ports:
       - "3333:3333"
     volumes:
       - openrefine_data:/data
-    environment:
-      - REFINE_INTERFACE=0.0.0.0
-      - REFINE_PORT=3333
-      - REFINE_MIN_MEMORY=1024M
-      - REFINE_MEMORY=1024M
-      - REFINE_DATA_DIR=/data
-      - REFINE_EXTRA_OPTS=refine.headless=true
+    command: -i 0.0.0.0 -d /data -m 1024M
     restart: unless-stopped
     networks:
       - rdf-network
+
+  # RML Mapper - Convert structured data (CSV, JSON, XML) to RDF using RML mappings
+  # Usage: docker compose run --rm rmlmapper -m /data/mapping.ttl
+  rmlmapper:
+    image: rmlio/rmlmapper-java:v7.3.3
+    container_name: rmlmapper
+    volumes:
+      - ./data:/data
+    profiles:
+      - tools
+    networks:
+      - rdf-network
+
+  # === Visualization & Browsing ===
 
   webvowl:
     image: metacodingio/webvowl:v1
@@ -55,38 +91,69 @@ services:
     networks:
       - rdf-network
 
-  # docker run --rm -it -p 8080:8080 ghcr.io/zazuko/trifid:latest
-  # Write docker-compose service entry to replicate the above docker command
+  # Trifid - Linked Data proxy with built-in Graph Explorer (Zazuko)
   trifid:
     image: ghcr.io/zazuko/trifid:latest
     container_name: trifid
     ports:
       - "8084:8080"
     environment:
-      - SPARQL_ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
-      # - DATASET_BASE_URL: the base URL to use to enable rewriting
-      # - SPARQL_USER: the user to use to authenticate against the SPARQL endpoint
-      # - SPARQL_PASSWORD: the password to use to authenticate against the SPARQL endpoint
+      - SPARQL_ENDPOINT_URL=http://qlever:7001
     networks:
       - rdf-network
 
-  # docker pull ghcr.io/zazuko/blueprint:latest
+  # Blueprint - Knowledge graph browser (Zazuko)
   blueprint:
     image: ghcr.io/zazuko/blueprint:latest
     container_name: blueprint
     ports:
       - "8085:80"
     environment:
-      - ENDPOINT_URL=http://blazegraph:8080/bigdata/namespace/kb/sparql
+      - ENDPOINT_URL=http://qlever:7001
       - SPARQL_CONSOLE_URL=http://trifid:8080/sparql
       - GRAPH_EXPLORER_URL=http://trifid:8080/graph-explorer
     networks:
       - rdf-network
 
+  # === Query Tools ===
+
+  # YASGUI - Standalone SPARQL query editor with autocomplete and visualization
+  yasgui:
+    image: redpencil/yasgui:latest
+    container_name: yasgui
+    ports:
+      - "8086:80"
+    environment:
+      - DEFAULT_SPARQL_ENDPOINT=http://localhost:7001
+    networks:
+      - rdf-network
+
+  # Comunica - Federated SPARQL query engine for querying across multiple endpoints
+  comunica:
+    image: comunica/query-sparql:latest
+    container_name: comunica
+    ports:
+      - "8087:8080"
+    command: http --port 8080 http://qlever:7001 http://fuseki:3030/ds/sparql
+    restart: unless-stopped
+    networks:
+      - rdf-network
+
+  # Zazuko SHACL Playground - Client-side SHACL shape validation tool
+  # Build from source: git clone https://github.com/zazuko/shacl-playground && cd shacl-playground && docker build -t shacl-playground .
+  # shacl-playground:
+  #   build: ./shacl-playground
+  #   container_name: shacl-playground
+  #   ports:
+  #     - "8088:80"
+  #   networks:
+  #     - rdf-network
+
 networks:
   rdf-network:
 
 volumes:
-  blazegraph_data:
+  qlever_data:
+  fuseki_data:
   refine_data:
-
+  openrefine_data:
