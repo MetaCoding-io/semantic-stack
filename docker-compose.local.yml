@@ -11,7 +11,7 @@ services:
       - ./data:/data
 
   rdf4j:
-    image: eclipse/rdf4j-workbench:5.0.1
+    image: eclipse/rdf4j-workbench:5.2.2
     container_name: rdf4j
     ports:
       - "8082:8080"
@@ -80,6 +80,44 @@ services:
     networks:
       - monorepo_default
 
+  # Oxigraph - Modern Rust-based RDF triplestore with built-in YASGUI UI
+  oxigraph:
+    image: oxigraph/oxigraph:latest
+    container_name: oxigraph
+    ports:
+      - "7878:7878"
+    volumes:
+      - oxigraph_data:/data
+    command: serve --location /data --bind 0.0.0.0:7878
+    restart: unless-stopped
+    networks:
+      - monorepo_default
+
+  # Apache Jena Fuseki - Mature SPARQL 1.1 server with TDB2 storage
+  fuseki:
+    image: secoresearch/fuseki:5.5.0
+    container_name: fuseki
+    ports:
+      - "3030:3030"
+    volumes:
+      - fuseki_data:/fuseki
+    environment:
+      - ADMIN_PASSWORD=admin
+    restart: unless-stopped
+    networks:
+      - monorepo_default
+
+  # YASGUI - Standalone SPARQL query editor with autocomplete and visualization
+  yasgui:
+    image: redpencil/yasgui:latest
+    container_name: yasgui
+    ports:
+      - "8086:80"
+    environment:
+      - DEFAULT_SPARQL_ENDPOINT=http://localhost:9999/bigdata/namespace/kb/sparql
+    networks:
+      - monorepo_default
+
 networks:
   monorepo_default:
     external: true
@@ -88,3 +126,5 @@ volumes:
   blazegraph_data:
   refine_data:
   openrefine_data:
+  oxigraph_data:
+  fuseki_data:
