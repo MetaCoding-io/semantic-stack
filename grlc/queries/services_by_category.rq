@@ -1,0 +1,16 @@
+#+ summary: Services in one category
+#+ description: The category parameter is matched against the category's schema:name, e.g. "Triple store".
+#+ method: GET
+#+ tags:
+#+   - semantic-stack
+
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?service ?name ?port
+WHERE {
+  ?service a ss:Service ; schema:name ?name ; ss:category ?cat .
+  ?cat schema:name ?_category .
+  OPTIONAL { ?service ss:port ?port }
+}
+ORDER BY ?name

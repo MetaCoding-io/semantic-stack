@@ -173,3 +173,68 @@ jobs:
       - name: jelly-cli round-trips the sample data
         run: |
           docker compose --profile tools run --rm tools sh -c 'jelly-cli rdf to-jelly sample/semantic-stack.ttl > out/semantic-stack.jelly && jelly-cli rdf inspect out/semantic-stack.jelly'
+      - name: ROBOT reasons over the vocabulary
+        run: |
+          docker compose --profile tools run --rm robot reason --reasoner ELK --input sample/semantic-stack-vocab.ttl --output out/vocab-reasoned.ttl
+          grep -q 'owl:Class' data/out/vocab-reasoned.ttl
+      - name: Nemo derives the transitive dependency closure
+        run: |
+          docker compose --profile tools run --rm nemo -D out -o nemo/dependencies.rls
+          grep -q transitivelyDependsOn data/out/nemo-derived.ttl
+      - name: WIDOCO documents the vocabulary
+        run: |
+          docker compose --profile tools run --rm widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en
+          # a slash ontology IRI (http://localhost:8084/vocab/) makes WIDOCO write into a doc/ subfolder
+          ls data/out/widoco/doc/ && test -s "$(ls data/out/widoco/doc/index*.html | head -1)"
+      - name: RPT runs a SPARQL file over the sample data
+        run: docker compose --profile tools run --rm rpt-cli integrate sample/semantic-stack.ttl queries/01-services-by-category.rq | tee /dev/stderr | grep -q Fuseki
+
+  # One job per optional profile. `services` is what to start (default: every service in the profile),
+  # `load` posts data/sample into the stores first, `checks` are scripts/smoke.sh check names.
+  profiles:
+    name: ${{ matrix.profile }} profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { profile: virtuoso,       services: "virtuoso",                      build: "",           load: true,  checks: "virtuoso virtuoso-data" }
+          - { profile: geosparql,      services: "fuseki-geosparql",              build: "",           load: true,  checks: "geosparql geosparql-data geosparql-query" }
+          - { profile: prez,           services: "fuseki prez prez-ui",           build: "",           load: true,  checks: "prez prez-ui" }
+          - { profile: grlc,           services: "fuseki grlc",                   build: "",           load: true,  checks: "grlc grlc-query" }
+          - { profile: graph-explorer, services: "fuseki graph-explorer",         build: "",           load: true,  checks: "graph-explorer" }
+          - { profile: docs,           services: "landing pylode",                build: "pylode",     load: false, checks: "pylode pylode-render" }
+          - { profile: rpt,            services: "fuseki rpt",                    build: "",           load: true,  checks: "rpt rpt-query" }
+          - { profile: lp-etl,         services: "",                              build: "",           load: false, checks: "lp-etl" }
+          - { profile: validation,     services: "itb-shacl",                     build: "",           load: false, checks: "itb-shacl itb-validate" }
+          - { profile: observability,  services: "fuseki prometheus sparql-exporter grafana", build: "", load: true, checks: "prometheus sparql-exporter grafana" }
+          - { profile: mcp,            services: "fuseki sparql-mcp rudof-mcp open-ontologies", build: "sparql-mcp", load: true, checks: "sparql-mcp rudof-mcp open-ontologies" }
+          - { profile: solid,          services: "solid",                         build: "",           load: false, checks: "solid" }
+    steps:
+      - uses: actions/checkout@v7
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull the profile's images
+        run: docker compose --profile ${{ matrix.profile }} pull --ignore-buildable ${{ matrix.services }} || true
+      - name: Build the profile's local images (prebuilt ones are pulled from GHCR when they exist)
+        if: matrix.build != ''
+        run: docker compose --profile ${{ matrix.profile }} pull ${{ matrix.build }} || docker compose --profile ${{ matrix.profile }} build ${{ matrix.build }}
+      - name: Start
+        run: docker compose --profile ${{ matrix.profile }} up -d --wait --wait-timeout 300 ${{ matrix.services }} || docker compose --profile ${{ matrix.profile }} ps -a
+      - name: Load sample data
+        if: matrix.load
+        run: |
+          ./scripts/smoke.sh fuseki >/dev/null 2>&1 || true
+          ./scripts/load.sh
+      - name: Smoke test
+        run: ./scripts/smoke.sh ${{ matrix.checks }}
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose --profile ${{ matrix.profile }} ps -a
+          docker compose --profile ${{ matrix.profile }} logs --tail 100

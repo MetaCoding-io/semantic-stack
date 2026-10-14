@@ -1,0 +1,16 @@
+#+ summary: Every service with its category and host port
+#+ description: Lists the services in data/sample grouped by category. See services_by_category to filter by category name.
+#+ method: GET
+#+ pagination: 100
+#+ tags:
+#+   - semantic-stack
+
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?service ?name ?category ?port
+WHERE {
+  ?service a ss:Service ; schema:name ?name ; ss:category/schema:name ?category .
+  OPTIONAL { ?service ss:port ?port }
+}
+ORDER BY ?category ?name

@@ -8,9 +8,23 @@
 #   qlever        QLever + QLever UI (run `--profile qlever-index run --rm qlever-index` once first; `make qlever-up` does both)
 #   oxigraph      Oxigraph, a lightweight Rust store
 #   graphdb       Ontotext GraphDB Free
-#   tools         Python toolbox (+ jelly-cli), RMLMapper, YARRRML, SDM-RDFizer, rudof, EYE (CLI)
+#   tools         Python toolbox (+ jelly-cli), RMLMapper, YARRRML, SDM-RDFizer, rudof, EYE, ROBOT, Nemo, WIDOCO, RPT (CLI)
 #   jupyter       JupyterLab with the toolbox
 #   ontop         Postgres + Ontop virtual knowledge graph
+#   virtuoso      OpenLink Virtuoso Open Source, a second full store
+#   geosparql     Fuseki + GeoSPARQL (Zazuko build, same Jena as the main Fuseki)
+#   prez          Prez Linked Data API (+ Prez UI) over Fuseki
+#   grlc          grlc: the .rq files in grlc/queries as a Swagger REST API
+#   graph-explorer  AWS Graph Explorer over Fuseki
+#   docs          pyLODE as an HTTP service
+#   rpt           RDF Processing Toolkit: SPARQL/GraphQL server with YASGUI proxying Fuseki
+#   lp-etl        LinkedPipes ETL (four containers)
+#   validation    ITB SHACL validator (web form + REST + SOAP)
+#   observability Prometheus + sparql-prometheus-exporter + Grafana with the SPARQL datasource
+#   mcp           MCP servers for coding agents: sparql-mcp (Fuseki), rudof-mcp, open-ontologies
+#   graphrag      Flexible GraphRAG (LLM knowledge-graph construction + hybrid search) + Qdrant
+#   ollama        Ollama, a local OpenAI-compatible LLM for the graphrag profile
+#   solid         Community Solid Server (Solid Pod / LDP server)
 #
 # URL rule of thumb: anything a *browser* loads (Blueprint, the QLever UI backend setting)
 # must use localhost:<host port>; anything a *container* calls (Trifid, Comunica) uses the
@@ -36,8 +50,12 @@ services:
   landing:
     image: nginx:1.31-alpine
     <<: *restart
+    networks:
+      default:
+        aliases: [landing.internal]   # pyLODE's URL validator wants a dotted host: http://landing.internal/data/...
     volumes:
       - ./landing:/usr/share/nginx/html:ro
+      - ./data:/usr/share/nginx/html/data:ro   # browse ./data at http://localhost:8080/data/; pyLODE fetches it as http://landing.internal/data/...
     ports:
       - "${LANDING_PORT:-8080}:80"
     healthcheck:
@@ -274,6 +292,22 @@ services:
     ports:
       - "${SPARKLIS_PORT:-8092}:8080"
 
+  # Sparnatural (Sparna): visual query builder driven by a SHACL configuration. Static site, so the
+  # browser sends queries to the CORS-enabled sparql-proxy (endpoint attribute in sparnatural/index.html).
+  # sparnatural/config.ttl describes data/sample; docs at https://docs.sparnatural.eu/
+  sparnatural:
+    image: nginx:1.31-alpine
+    <<: *restart
+    volumes:
+      - ./sparnatural:/usr/share/nginx/html:ro
+    ports:
+      - "${SPARNATURAL_PORT:-8094}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/config.ttl"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   # ---------------------------------------------------------------- federated querying
   # Comunica as an HTTP SPARQL endpoint federating over the stores in COMUNICA_SOURCES
   # (space-separated; add sparql@http://qlever:7001 or sparql@http://oxigraph:7878/query in .env
@@ -381,6 +415,62 @@ services:
       - ./data:/data
     command: ["--help"]
 
+  # ROBOT (OBO Foundry): OWL toolkit - reason (ELK/HermiT/whelk), report (QC), convert, merge, extract.
+  #   docker compose --profile tools run --rm robot reason --reasoner ELK --input sample/semantic-stack-vocab.ttl --output out/vocab-reasoned.ttl
+  #   docker compose --profile tools run --rm robot report --fail-on none --input sample/semantic-stack-vocab.ttl --output out/vocab-report.tsv
+  robot:
+    profiles: [tools]
+    image: obolibrary/robot:v1.9.10
+    entrypoint: ["robot"]
+    environment:
+      ROBOT_JAVA_ARGS: "-Xmx1g"
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["--help"]
+
+  # Nemo (TU Dresden): Datalog rule engine that reads Turtle/N-Triples/TriG and SPARQL endpoints and
+  # writes RDF. Rules live in data/nemo/*.rls; the image has no shell.
+  #   docker compose --profile tools run --rm nemo -D out -o nemo/dependencies.rls
+  nemo:
+    profiles: [tools]
+    image: ghcr.io/knowsys/nemo:v0.10.1
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["--help"]
+
+  # WIDOCO: wizard-style HTML documentation (+ WebVOWL view) for an ontology. One-shot CLI.
+  #   docker compose --profile tools run --rm widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en
+  # Output: data/out/widoco/doc/ for a slash ontology IRI like the sample vocabulary
+  # (browse it at http://localhost:8080/data/out/widoco/doc/).
+  widoco:
+    profiles: [tools]
+    image: ghcr.io/dgarijo/widoco:v1.4.25
+    platform: linux/amd64   # upstream publishes amd64 only
+    # The image runs as its own unprivileged user, which can't create data/out/widoco once the other
+    # tools (which run as root) have created data/out; run as root like them, output ownership matches.
+    user: "0:0"
+    environment:
+      JAVA_OPTS: "-Xmx1g"
+    volumes:
+      - ./data:/usr/local/widoco/data
+    command: ["--help"]
+
+  # RPT as a one-shot CLI: run SPARQL files over data/sample, convert RML to SPARQL CONSTRUCT.
+  #   docker compose --profile tools run --rm rpt-cli integrate sample/semantic-stack.ttl queries/01-services-by-category.rq
+  #   docker compose --profile tools run --rm rpt-cli rmltk rml to sparql rml/mapping.rml.ttl
+  rpt-cli:
+    profiles: [tools]
+    image: aksw/rpt:2.0.0-rc7
+    platform: linux/amd64   # upstream publishes amd64 only
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["--help"]
+
   jupyter:
     profiles: [jupyter]
     build: ./tools
@@ -467,6 +557,490 @@ services:
     ports:
       - "${GRAPHDB_PORT:-7200}:7200"
 
+  # ---------------------------------------------------------------- Virtuoso (profile: virtuoso)
+  # OpenLink Virtuoso Open Source: the store behind DBpedia and much of the LOD cloud. HTTP, SPARQL
+  # and the Conductor admin UI on 8890, isql on 1111. scripts/load.sh loads data/sample into it.
+  #   query:  http://virtuoso:8890/sparql?query=...     admin: http://localhost:8890/conductor (dba / $VIRTUOSO_DBA_PASSWORD)
+  #   load:   curl --digest -u dba:dba -T file.ttl "http://localhost:8890/sparql-graph-crud-auth?graph=<iri>"
+  # Any virtuoso.ini key can be set as VIRT_<SECTION>_<KEY>. Licence GPL-2.0.
+  virtuoso:
+    profiles: [virtuoso]
+    image: openlink/virtuoso-opensource-7:7.2.17
+    <<: *restart
+    environment:
+      DBA_PASSWORD: ${VIRTUOSO_DBA_PASSWORD:-dba}
+      DAV_PASSWORD: ${VIRTUOSO_DBA_PASSWORD:-dba}
+      VIRT_PARAMETERS_NUMBEROFBUFFERS: "170000"    # ~1.3 GB of buffers; see the sizing table in virtuoso.ini
+      VIRT_PARAMETERS_MAXDIRTYBUFFERS: "130000"
+      VIRT_PARAMETERS_DIRSALLOWED: ".,../vad,/usr/share/proj,/data"   # lets isql ld_dir('/data', ...) bulk-load ./data
+    volumes:
+      - virtuoso_data:/database
+      - ./data:/data:ro
+    ports:
+      - "${VIRTUOSO_PORT:-8890}:8890"
+      - "${VIRTUOSO_ISQL_PORT:-1111}:1111"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8890/sparql?query=ASK%7B%7D"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  # ---------------------------------------------------------------- Fuseki + GeoSPARQL (profile: geosparql)
+  # Zazuko's Fuseki-main build with Jena GeoSPARQL and Apache SIS (same Jena 6.2 as the main Fuseki).
+  # fuseki-geosparql/config.ttl adds update and Graph Store endpoints so scripts/load.sh can feed it;
+  # data/sample/semantic-stack-geo.ttl has WKT points, data/queries/40-geosparql-nearby.rq uses them.
+  #   query: http://localhost:3031/ds/sparql   update: /ds/update   data: /ds/data (admin / $FUSEKI_ADMIN_PASSWORD)
+  fuseki-geosparql:
+    profiles: [geosparql]
+    image: ghcr.io/zazuko/fuseki-geosparql:v5.2.0
+    <<: *restart
+    environment:
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-admin}
+      JAVA_OPTS: "-Xms512m -Xmx1g"
+      DISABLE_OTEL: "true"
+    volumes:
+      - ./fuseki-geosparql/config.ttl:/fuseki/configuration/config.ttl:ro
+      - fuseki_geosparql_data:/fuseki/databases
+      - ./data:/data:ro
+    ports:
+      - "${FUSEKI_GEOSPARQL_PORT:-3031}:3030"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3030/ds/sparql?query=ASK%7B%7D"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  # ---------------------------------------------------------------- Prez (profile: prez)
+  # Prez (RDFLib / KurrawongAI): Linked Data API over Fuseki - content negotiation by profile, OGC API
+  # Features, search, /object?uri=<any IRI>. Waits for the endpoint at start. OpenAPI UI at /docs.
+  #   http://localhost:8000/docs   http://localhost:8000/object?uri=http://localhost:8084/service/fuseki
+  prez:
+    profiles: [prez]
+    image: ghcr.io/rdflib/prez:4.25.1
+    <<: *restart
+    environment:
+      SPARQL_ENDPOINT: ${PREZ_SPARQL_ENDPOINT:-http://fuseki:3030/ds/sparql}
+      SYSTEM_URI: "http://localhost:${PREZ_PORT:-8000}"
+      LOG_LEVEL: INFO
+    ports:
+      - "${PREZ_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  # Prez UI: browser app, so the API URL is the *host* URL. 3.8.3 is the last generic UI image
+  # (the v4 UI is generated per site); it may lag the 4.x API.
+  prez-ui:
+    profiles: [prez]
+    image: ghcr.io/rdflib/prez-ui:3.8.3
+    <<: *restart
+    environment:
+      VITE_API_BASE_URL: "http://localhost:${PREZ_PORT:-8000}"
+    ports:
+      - "${PREZ_UI_PORT:-8001}:80"
+
+  # ---------------------------------------------------------------- grlc (profile: grlc)
+  # grlc (CLARIAH): every .rq file in grlc/queries becomes a Swagger-documented REST route over Fuseki.
+  # GRLC_SERVER_NAME ends up in the OpenAPI "host" field, so it must be the *browser* host:port.
+  #   http://localhost:8088/api-local/          Swagger UI        http://localhost:8088/api-local/swagger   spec
+  #   http://localhost:8088/api-local/services  runs grlc/queries/services.rq (?_name variables become parameters)
+  grlc:
+    profiles: [grlc]
+    image: clariah/grlc:v1.3.11
+    platform: linux/amd64   # upstream publishes amd64 only
+    <<: *restart
+    environment:
+      GRLC_SERVER_NAME: "localhost:${GRLC_PORT:-8088}"
+      GRLC_SPARQL_ENDPOINT: ${GRLC_SPARQL_ENDPOINT:-http://fuseki:3030/ds/sparql}
+      GRLC_GITHUB_ACCESS_TOKEN: ${GRLC_GITHUB_ACCESS_TOKEN:-}
+      # The entrypoint chown -R's /home/grlc (queries included) to the grlc user and aborts
+      # when that fails, so the mount must be writable; mapping grlc to your UID keeps the
+      # files on the host owned by you.
+      USERMAP_UID: ${QLEVER_UID:-1000}
+      USERMAP_GID: ${QLEVER_GID:-1000}
+    volumes:
+      - ./grlc/queries:/home/grlc/queries
+    ports:
+      - "${GRLC_PORT:-8088}:80"
+
+  # ---------------------------------------------------------------- Graph Explorer (profile: graph-explorer)
+  # AWS Graph Explorer: click-to-explore instance graph over SPARQL. The *container* queries the store
+  # through its own proxy, so GRAPH_CONNECTION_URL is a service URL WITHOUT the trailing /sparql
+  # (the server appends it). UI: http://localhost:8095/explorer
+  graph-explorer:
+    profiles: [graph-explorer]
+    image: public.ecr.aws/neptune/graph-explorer:3.3.0
+    platform: linux/amd64   # upstream publishes amd64 only
+    <<: *restart
+    environment:
+      HOST: localhost
+      PROXY_SERVER_HTTPS_CONNECTION: "false"
+      GRAPH_EXP_HTTPS_CONNECTION: "false"
+      GRAPH_TYPE: sparql
+      GRAPH_CONNECTION_URL: ${GRAPH_EXPLORER_CONNECTION_URL:-http://fuseki:3030/ds}
+      GRAPH_EXP_FETCH_REQUEST_TIMEOUT: "60000"
+      PROXY_SERVER_ALLOWED_DB_ORIGINS: "http://fuseki:3030,http://sparql-proxy:3000,http://qlever:7001,http://virtuoso:8890"
+    ports:
+      - "${GRAPH_EXPLORER_PORT:-8095}:80"
+
+  # ---------------------------------------------------------------- pyLODE server (profile: docs)
+  # pyLODE as a service: HTML documentation for an ontology fetched by URL (GET only). The landing
+  # page serves ./data, so the sample vocabulary is reachable from inside the network:
+  #   http://localhost:8096/pylode?url=http://landing.internal/data/sample/semantic-stack-vocab.ttl
+  pylode:
+    profiles: [docs]
+    build: ./pylode
+    image: ghcr.io/metacoding-io/semantic-stack-pylode:3.6.0
+    <<: *restart
+    ports:
+      - "${PYLODE_PORT:-8096}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # ---------------------------------------------------------------- RPT (profile: rpt)
+  # RDF Processing Toolkit (AKSW): SPARQL server with YASGUI, GraphQL and a Linked Data viewer,
+  # here proxying Fuseki. Landing page /, endpoint /sparql, GraphQL /graphql.
+  rpt:
+    profiles: [rpt]
+    image: aksw/rpt:2.0.0-rc7
+    platform: linux/amd64   # upstream publishes amd64 only
+    <<: *restart
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    working_dir: /data
+    volumes:
+      - ./data:/data:ro
+    command: ["integrate", "-e", "remote", "--loc", "${RPT_SPARQL_ENDPOINT:-http://fuseki:3030/ds/sparql}", "--server", "--port", "8642"]
+    ports:
+      - "${RPT_PORT:-8642}:8642"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8642/sparql?query=ASK%7B%7D"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  # ---------------------------------------------------------------- LinkedPipes ETL (profile: lp-etl)
+  # Visual Linked Data ETL: pipelines of components (download, SPARQL transform, SHACL, upload to a
+  # SPARQL endpoint, ...). Four containers; images are dated snapshots of main (no semver releases).
+  # The baked configuration addresses the other containers as storage / executor / executor-monitor,
+  # hence the network aliases. The frontend is a browser app, so LP_ETL_DOMAIN is the host URL.
+  lp-etl-storage:
+    profiles: [lp-etl]
+    image: ghcr.io/linkedpipes/etl-storage:2026-10-01-398fe86
+    <<: *restart
+    networks:
+      default:
+        aliases: [storage]
+    environment:
+      LP_ETL_DOMAIN: "http://localhost:${LP_ETL_PORT:-9080}"
+      JAVA_TOOL_OPTIONS: "-Xmx512m"
+    volumes:
+      - lp_etl_storage:/data/lp-etl/storage
+      - lp_etl_configuration:/data/lp-etl/configuration
+      - lp_etl_logs:/data/lp-etl/logs
+
+  lp-etl-executor:
+    profiles: [lp-etl]
+    image: ghcr.io/linkedpipes/etl-executor:2026-10-01-398fe86
+    <<: *restart
+    networks:
+      default:
+        aliases: [executor]
+    environment:
+      LP_ETL_DOMAIN: "http://localhost:${LP_ETL_PORT:-9080}"
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    volumes:
+      - lp_etl_execution:/data/lp-etl/executor
+      - lp_etl_logs:/data/lp-etl/logs
+      - lp_etl_configuration:/data/lp-etl/configuration
+      - ./data:/data/input:ro   # pipelines can read the sample files here
+
+  lp-etl-executor-monitor:
+    profiles: [lp-etl]
+    image: ghcr.io/linkedpipes/etl-executor-monitor:2026-10-01-398fe86
+    <<: *restart
+    networks:
+      default:
+        aliases: [executor-monitor]
+    environment:
+      LP_ETL_DOMAIN: "http://localhost:${LP_ETL_PORT:-9080}"
+      JAVA_TOOL_OPTIONS: "-Xmx512m"
+    volumes:
+      - lp_etl_execution:/data/lp-etl/executor
+      - lp_etl_logs:/data/lp-etl/logs
+      - lp_etl_configuration:/data/lp-etl/configuration
+
+  lp-etl:
+    profiles: [lp-etl]
+    image: ghcr.io/linkedpipes/etl-frontend:2026-10-01-398fe86
+    <<: *restart
+    depends_on: [lp-etl-storage, lp-etl-executor, lp-etl-executor-monitor]
+    environment:
+      LP_ETL_DOMAIN: "http://localhost:${LP_ETL_PORT:-9080}"
+    volumes:
+      - lp_etl_configuration:/data/lp-etl/configuration
+      - lp_etl_logs:/data/lp-etl/logs
+    ports:
+      - "${LP_ETL_PORT:-9080}:8080"
+
+  # ---------------------------------------------------------------- ITB SHACL validator (profile: validation)
+  # European Commission Interoperability Test Bed validator: web form, REST and SOAP, one "domain"
+  # per shapes set. Domain "stack" (itb/stack/config.properties) validates against data/sample/shapes.ttl.
+  #   UI:   http://localhost:8097/shacl/stack/upload     Swagger: http://localhost:8097/shacl/swagger-ui/index.html
+  #   REST: curl -s -X POST http://localhost:8097/shacl/stack/api/validate -H 'Content-Type: application/json' \
+  #           -d "$(jq -n --rawfile d data/sample/semantic-stack.ttl '{contentToValidate:$d, embeddingMethod:"STRING", contentSyntax:"text/turtle", validationType:"stack", reportSyntax:"text/turtle"}')"
+  itb-shacl:
+    profiles: [validation]
+    image: isaitb/shacl-validator:1.13.0
+    <<: *restart
+    environment:
+      validator.resourceRoot: /validator/resources/
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    volumes:
+      - ./itb:/validator/resources:ro
+      - ./data/sample:/validator/resources/stack/shapes:ro   # shapes.ttl (the whole dir: a file can't be mounted inside a read-only mount)
+    ports:
+      - "${ITB_SHACL_PORT:-8097}:8080"
+
+  # ---------------------------------------------------------------- observability (profile: observability)
+  # Prometheus scrapes sparql-prometheus-exporter, which turns the SPARQL queries in
+  # prometheus/sparql-exporter.yml into gauges per endpoint; Grafana ships the Flanders Make SPARQL
+  # datasource (catalog plugin) provisioned against Fuseki, plus Prometheus. Login admin / $GRAFANA_ADMIN_PASSWORD.
+  # QLever's own /metrics can be scraped too: see prometheus/prometheus.yml.
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v3.15.0
+    <<: *restart
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+
+  sparql-exporter:
+    profiles: [observability]
+    image: ghcr.io/qup42/sparql-prometheus-exporter:0.1.0
+    <<: *restart
+    volumes:
+      - ./prometheus/sparql-exporter.yml:/etc/sparql-exporter/config.yml:ro
+    ports:
+      - "${SPARQL_EXPORTER_PORT:-9199}:9199"
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:13.2.4
+    <<: *restart
+    environment:
+      GF_PLUGINS_PREINSTALL_SYNC: flandersmake-sparql-datasource@1.1.0   # needs grafana.com on first start
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+
+  # ---------------------------------------------------------------- MCP servers (profile: mcp)
+  # Model Context Protocol servers so a coding agent (Claude Code, ...) can work with the stack.
+  # Generic SPARQL 1.1 MCP over Fuseki (SSE): SELECT/ASK/CONSTRUCT/DESCRIBE, SPARQL Update, Graph
+  # Store Protocol, SHACL validation. Point SPARQL_MCP_QUERY_URL at sparql-proxy for a read-only agent.
+  #   claude mcp add --transport sse sparql http://localhost:8103/sse
+  sparql-mcp:
+    profiles: [mcp]
+    build: ./sparql-mcp
+    image: ghcr.io/metacoding-io/semantic-stack-sparql-mcp:d9c0d57
+    <<: *restart
+    environment:
+      SPARQL_QUERY_URL: ${SPARQL_MCP_QUERY_URL:-http://fuseki:3030/ds/sparql}
+      SPARQL_UPDATE_URL: ${SPARQL_MCP_UPDATE_URL:-http://fuseki:3030/ds/update}
+      SPARQL_GRAPH_STORE_URL: ${SPARQL_MCP_GSP_URL:-http://fuseki:3030/ds/data}
+      SPARQL_USERNAME: admin
+      SPARQL_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-admin}
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8000"
+    ports:
+      - "${SPARQL_MCP_PORT:-8103}:8000"
+
+  # rudof as an MCP server (streamable HTTP): load RDF from files or http://fuseki:3030/ds/sparql,
+  # run SPARQL, validate with ShEx/SHACL, inspect nodes. Same image as the rudof CLI.
+  #   claude mcp add --transport http rudof http://localhost:8102/mcp
+  rudof-mcp:
+    profiles: [mcp]
+    image: angelip2303/rudof:0.3.25
+    platform: linux/amd64   # upstream publishes amd64 only
+    <<: *restart
+    working_dir: /data
+    environment:
+      RUDOF_MCP_STATE_PATH: /data/out/rudof-mcp-state.json
+      RUST_LOG: info
+    volumes:
+      - ./data:/data
+    command: ["mcp", "--transport", "streamable-http", "--bind", "0.0.0.0", "--port", "8000", "--route", "/mcp", "--allowed-network", "0.0.0.0/0"]
+    ports:
+      - "${RUDOF_MCP_PORT:-8102}:8000"
+
+  # open-ontologies: MCP server for ontology work - load, validate, reason (RDFS/OWL-RL, SHACL), change
+  # certificates, alignment - on an embedded Oxigraph. Streamable HTTP at /mcp, health at /health.
+  # The image's default command is stdio; serve-http is what a container needs. Empty token = no auth.
+  #   claude mcp add --transport http open-ontologies http://localhost:8101/mcp
+  open-ontologies:
+    profiles: [mcp]
+    image: ghcr.io/fabio-rovai/open-ontologies:2.0.1
+    <<: *restart
+    environment:
+      OPEN_ONTOLOGIES_STORAGE_MODE: persistent
+      OPEN_ONTOLOGIES_ONTOLOGY_DIRS: /data/sample
+      OPEN_ONTOLOGIES_TOKEN: ${OPEN_ONTOLOGIES_TOKEN:-}
+    command: ["--data-dir", "/var/lib/open-ontologies", "serve-http", "--host", "0.0.0.0", "--port", "8080"]
+    volumes:
+      - open_ontologies_data:/var/lib/open-ontologies
+      - ./data:/data:ro
+    ports:
+      - "${OPEN_ONTOLOGIES_PORT:-8101}:8080"
+
+  # ---------------------------------------------------------------- GraphRAG (profile: graphrag)
+  # Flexible GraphRAG: ingest documents, extract a knowledge graph with an LLM, store it in Fuseki
+  # (its own dataset "flexible-graphrag", auto-created through the admin API) and Qdrant, hybrid
+  # search, chat UI and an MCP server. Needs an LLM key (ANTHROPIC_API_KEY by default) or the ollama
+  # profile; embeddings run locally (all-MiniLM-L6-v2). The backend image is about 4 GB.
+  #   UI/API behind one port: http://localhost:8105/  (API docs /docs)   MCP: http://localhost:3001/mcp
+  qdrant:
+    profiles: [graphrag]
+    image: qdrant/qdrant:v1.19.2
+    <<: *restart
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+
+  flexible-graphrag:
+    profiles: [graphrag]
+    image: integratedsemantics/flexible-graphrag-backend:0.8.4
+    <<: *restart
+    depends_on:
+      fuseki:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      LLM_PROVIDER: ${GRAPHRAG_LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5-20250929}
+      OLLAMA_BASE_URL: http://ollama:11434     # used when GRAPHRAG_LLM_PROVIDER=ollama (profile ollama)
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
+      EMBEDDING_KIND: ${GRAPHRAG_EMBEDDING_KIND:-huggingface}
+      HUGGINGFACE_EMBEDDING_MODEL: all-MiniLM-L6-v2
+      HUGGINGFACE_EMBEDDING_DIMENSION: "384"
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      PG_GRAPH_DB: none
+      RDF_GRAPH_DB: fuseki
+      FUSEKI_BASE_URL: http://fuseki:3030
+      FUSEKI_DATASET: flexible-graphrag        # not ds: the adapter expects Fuseki's /query layout
+      FUSEKI_USERNAME: admin
+      FUSEKI_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-admin}
+      VECTOR_DB: qdrant
+      QDRANT_VECTOR_DB_CONFIG: '{"host": "qdrant", "port": 6333, "collection_name": "hybrid_search_vector", "https": false}'
+      SEARCH_DB: bm25
+      ENABLE_OBSERVABILITY: "false"
+    volumes:
+      - ./data:/app/sample_docs:ro
+      - graphrag_uploads:/app/uploads
+    ports:
+      - "${FLEXIBLE_GRAPHRAG_PORT:-8104}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  flexible-graphrag-ui:
+    profiles: [graphrag]
+    image: integratedsemantics/flexible-graphrag-ui-react:0.8.4
+    <<: *restart
+    depends_on: [flexible-graphrag]
+    environment:
+      VITE_API_BASE_URL: /api
+
+  # One port for UI and API, as upstream's proxy does (the UI is built for the /ui/react/ base path).
+  graphrag-proxy:
+    profiles: [graphrag]
+    image: nginx:1.31-alpine
+    <<: *restart
+    depends_on: [flexible-graphrag, flexible-graphrag-ui]
+    volumes:
+      - ./graphrag/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${FLEXIBLE_GRAPHRAG_UI_PORT:-8105}:80"
+
+  #   claude mcp add --transport http flexible-graphrag http://localhost:3001/mcp
+  flexible-graphrag-mcp:
+    profiles: [graphrag]
+    build: ./flexible-graphrag-mcp
+    image: ghcr.io/metacoding-io/semantic-stack-flexible-graphrag-mcp:0.8.4
+    <<: *restart
+    depends_on: [flexible-graphrag]
+    environment:
+      FLEXIBLE_GRAPHRAG_URL: http://flexible-graphrag:8000
+    ports:
+      - "${FLEXIBLE_GRAPHRAG_MCP_PORT:-3001}:3001"
+
+  # ---------------------------------------------------------------- Ollama (profile: ollama)
+  # Local models with an OpenAI-compatible API at http://ollama:11434/v1 (host: localhost:11434).
+  #   docker compose --profile ollama exec ollama ollama pull qwen3:8b     # any model from ollama.com/library
+  # GPU: add `gpus: all` (NVIDIA Container Toolkit) or use the 0.40.4-rocm tag with /dev/kfd and /dev/dri.
+  ollama:
+    profiles: [ollama]
+    image: ollama/ollama:0.40.4
+    <<: *restart
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD", "/bin/ollama", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # ---------------------------------------------------------------- Solid (profile: solid)
+  # Community Solid Server: a Solid Pod / LDP server to develop Solid apps against, file-backed in a
+  # volume. CSS mints every IRI from CSS_BASE_URL, so it must be the URL the *browser* uses.
+  #   http://localhost:8100/   (create an account and a pod; SOLID_CONFIG=config/file-root.json makes / writable without accounts)
+  solid:
+    profiles: [solid]
+    image: solidproject/community-server:7.2.0
+    <<: *restart
+    environment:
+      CSS_CONFIG: ${SOLID_CONFIG:-config/file.json}
+      CSS_BASE_URL: "http://localhost:${SOLID_PORT:-8100}/"
+      CSS_ROOT_FILE_PATH: /data
+      CSS_LOGGING_LEVEL: info
+    volumes:
+      - solid_data:/data
+    ports:
+      - "${SOLID_PORT:-8100}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
 volumes:
   fuseki_data:
   oxigraph_data:
@@ -474,3 +1048,16 @@ volumes:
   openrefine_data:
   postgres_data:
   graphdb_home:
+  virtuoso_data:
+  fuseki_geosparql_data:
+  lp_etl_storage:
+  lp_etl_configuration:
+  lp_etl_logs:
+  lp_etl_execution:
+  prometheus_data:
+  grafana_data:
+  open_ontologies_data:
+  qdrant_data:
+  graphrag_uploads:
+  ollama_models:
+  solid_data:

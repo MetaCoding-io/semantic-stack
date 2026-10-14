@@ -8,9 +8,11 @@ Mounted into most containers as `/data`. Drop your own files here.
 | `sample/semantic-stack-vocab.ttl` | The vocabulary behind it. Visualise it in WebVOWL, document it with pyLODE, or use it as the Ontop ontology. |
 | `sample/shapes.ttl` | SHACL shapes for the sample data. Validate with pySHACL (CLI or the `pyshacl` service), rudof, SHACL Play or Fuseki's `/ds/shacl` endpoint. |
 | `sample/semantic-stack-skos.ttl` | The tool categories as a SKOS thesaurus. Browse it in Skosmos once loaded. |
-| `queries/*.rq` | Example queries: `01`-`03` for the sample data, `10`-`11` for the Olympics data in QLever, `20` for Comunica, `30` for SPARQL Anything. |
+| `queries/*.rq` | Example queries: `01`-`03` for the sample data, `10`-`11` for the Olympics data in QLever, `20` for Comunica, `30` for SPARQL Anything, `40` for GeoSPARQL. |
 | `rml/` | A CSV plus YARRRML mapping, executed by RMLMapper or SDM-RDFizer; see `rml/README.md`. |
+| `sample/semantic-stack-geo.ttl` | WKT points for the organisations, for the `geosparql` profile. |
 | `n3/socrates.n3` | Notation3 rules for the EYE reasoner. |
+| `nemo/dependencies.rls` | Datalog rules for Nemo (transitive `ss:dependsOn` closure). |
 | `linkml/semantic-stack.yaml` | The same model as a LinkML schema; generate OWL, SHACL, JSON Schema or Pydantic from it. |
 | `out/` | Ignored by git; put generated files here. |
 

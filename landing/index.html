@@ -69,6 +69,30 @@
     <div class="card"><h3><span class="dot" data-probe="http://localhost:9090/"></span><a href="http://localhost:9090/">Skosmos</a></h3>
       <p>SKOS vocabulary browser and REST API over Fuseki. Shows the sample thesaurus of tool categories after <code>make load</code>.</p>
       <div class="links"><a href="http://localhost:9090/stack/en/">stack vocabulary</a><a href="http://localhost:9090/rest/v1/vocabularies?lang=en">REST</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8094/config.ttl"></span><a href="http://localhost:8094/">Sparnatural</a></h3>
+      <p>Visual query builder driven by a SHACL configuration of the sample data (<code>sparnatural/config.ttl</code>). Queries go to sparql-proxy.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8095/status"></span><a href="http://localhost:8095/explorer">Graph Explorer</a></h3>
+      <p>AWS Graph Explorer over Fuseki: click through instances and relations. Profile <code>graph-explorer</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8000/health"></span><a href="http://localhost:8000/docs">Prez</a></h3>
+      <p>Linked Data API over Fuseki with content negotiation by profile and OGC API Features. Profile <code>prez</code>; UI on <a href="http://localhost:8001/">:8001</a>.</p>
+      <div class="links"><a href="http://localhost:8000/docs">OpenAPI</a><a href="http://localhost:8000/object?uri=http://localhost:8084/service/fuseki">/object?uri=...</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8088/api-local/swagger"></span><a href="http://localhost:8088/api-local/">grlc</a></h3>
+      <p>The <code>.rq</code> files in <code>grlc/queries</code> as a Swagger-documented REST API over Fuseki. Profile <code>grlc</code>.</p>
+      <div class="links"><a href="http://localhost:8088/api-local/services">/services</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8642/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8642/">RPT</a></h3>
+      <p>RDF Processing Toolkit: SPARQL endpoint with YASGUI, GraphQL and a Linked Data viewer proxying Fuseki. Profile <code>rpt</code>.</p>
+      <div class="links"><a href="http://localhost:8642/sparql">YASGUI</a><a href="http://localhost:8642/graphql">GraphQL</a></div></div>
+  </div>
+
+  <h2>More stores</h2>
+  <div class="grid">
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8890/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8890/sparql">Virtuoso</a></h3>
+      <p>OpenLink Virtuoso Open Source. Profile <code>virtuoso</code> (<code>make virtuoso-up</code>); <code>make load</code> fills it. Conductor login <code>dba</code> / <code>dba</code>.</p>
+      <div class="links"><a href="http://localhost:8890/sparql">/sparql</a><a href="http://localhost:8890/conductor">Conductor</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:3031/ds/sparql?query=ASK%7B%7D"></span><a href="http://localhost:3031/ds/sparql">Fuseki + GeoSPARQL</a></h3>
+      <p>Zazuko's Fuseki-main build with GeoSPARQL functions and a spatial index. Profile <code>geosparql</code>; try <code>data/queries/40-geosparql-nearby.rq</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8100/"></span><a href="http://localhost:8100/">Community Solid Server</a></h3>
+      <p>A Solid Pod / LDP server to develop Solid apps against. Profile <code>solid</code>.</p></div>
   </div>
 
   <h2>Transform and model</h2>
@@ -87,8 +111,28 @@
       <div class="links"><a href="http://localhost:8091/validate">validate</a><a href="http://localhost:8091/doc">document</a><a href="http://localhost:8091/generate">generate</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8099/docs/openapi.json"></span><a href="http://localhost:8099/docs/swagger">pySHACL service</a></h3>
       <p>SHACL validation over HTTP: <code>POST /validate</code> with <code>data_graph</code> and <code>shapes_graph</code>. OpenAPI docs at <code>/docs/swagger</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8097/shacl/stack/api/info"></span><a href="http://localhost:8097/shacl/stack/upload">ITB SHACL validator</a></h3>
+      <p>European Commission test-bed validator: web form, REST and SOAP over <code>data/sample/shapes.ttl</code>. Profile <code>validation</code>.</p>
+      <div class="links"><a href="http://localhost:8097/shacl/swagger-ui/index.html">Swagger</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8096/"></span><a href="http://localhost:8096/">pyLODE server</a></h3>
+      <p>Ontology documentation by URL. Profile <code>docs</code>. Try the <a href="http://localhost:8096/pylode?url=http://landing.internal/data/sample/semantic-stack-vocab.ttl">sample vocabulary</a>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:9080/"></span><a href="http://localhost:9080/">LinkedPipes ETL</a></h3>
+      <p>Visual Linked Data ETL pipelines. Profile <code>lp-etl</code> (four containers).</p></div>
     <div class="card"><h3><span class="dot ok"></span>CLI tools</h3>
-      <p>RMLMapper, YARRRML, SDM-RDFizer, rudof (ShEx/SHACL), EYE (N3 reasoning), jelly-cli, pySHACL, LinkML generators via <code>docker compose --profile tools run --rm &lt;service&gt;</code>. See <code>data/README.md</code>.</p></div>
+      <p>RMLMapper, YARRRML, SDM-RDFizer, rudof (ShEx/SHACL), EYE (N3), ROBOT (OWL), Nemo (Datalog), WIDOCO, RPT, jelly-cli, pySHACL, LinkML generators via <code>docker compose --profile tools run --rm &lt;service&gt;</code>. See <code>data/README.md</code>. Browse <a href="http://localhost:8080/data/">./data</a>.</p></div>
+  </div>
+
+  <h2>Agents, LLMs, observability</h2>
+  <div class="grid">
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8101/health"></span>MCP servers</h3>
+      <p>Profile <code>mcp</code>: <a href="http://localhost:8103/sse">sparql-mcp</a> (SPARQL 1.1 over Fuseki, SSE), <a href="http://localhost:8102/mcp">rudof-mcp</a> (ShEx/SHACL/SPARQL, streamable HTTP) and <a href="http://localhost:8101/health">open-ontologies</a> (ontology engineering). Register them with <code>claude mcp add</code>; see the README.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8105/health"></span><a href="http://localhost:8105/">Flexible GraphRAG</a></h3>
+      <p>LLM knowledge-graph extraction into Fuseki + Qdrant with hybrid search, chat UI and MCP (:3001). Profile <code>graphrag</code>; needs an LLM key or the <code>ollama</code> profile.</p>
+      <div class="links"><a href="http://localhost:8105/docs">API docs</a><a href="http://localhost:6333/dashboard">Qdrant</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:11434/api/tags"></span><a href="http://localhost:11434/">Ollama</a></h3>
+      <p>Local LLM with an OpenAI-compatible API. Profile <code>ollama</code>; pull a model with <code>docker compose --profile ollama exec ollama ollama pull qwen3:8b</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:3000/api/health"></span><a href="http://localhost:3000/">Grafana</a></h3>
+      <p>SPARQL datasource over Fuseki plus Prometheus (<a href="http://localhost:9091/">:9091</a>) scraping the SPARQL exporter. Profile <code>observability</code>. Login <code>admin</code> / <code>admin</code>.</p></div>
   </div>
 
   <h2>First steps</h2>
@@ -96,7 +140,9 @@
 make load           # load data/sample into Fuseki
 make smoke          # check every service answers
 make qlever-up      # optional: add QLever + UI with the Olympics demo (indexes on first run)
-make oxigraph-up    # optional: add Oxigraph</pre>
+make oxigraph-up    # optional: add Oxigraph
+make profile P=prez # optional: any other profile (virtuoso, geosparql, prez, grlc, graph-explorer, docs, rpt,
+                    #           lp-etl, validation, observability, mcp, graphrag, ollama, solid)</pre>
   <div class="note">Container-to-container URLs use service names (<code>http://fuseki:3030/ds/sparql</code>). Browser URLs use <code>localhost</code>. Blueprint and the QLever UI are browser apps, so they are configured with <code>localhost</code> URLs. Grey dots are services whose profile is not running.</div>
 
   <footer>A <a href="https://metacoding.io">MetaCoding</a> project. Source and documentation: <a href="https://github.com/MetaCoding-io/semantic-stack">github.com/MetaCoding-io/semantic-stack</a>.</footer>

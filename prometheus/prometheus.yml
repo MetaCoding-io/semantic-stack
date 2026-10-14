@@ -1,0 +1,37 @@
+# Prometheus for the observability profile.
+#   sparql   -> sparql-prometheus-exporter turns the SPARQL queries in sparql-exporter.yml into
+#               gauges for every endpoint listed under targets (blackbox-style ?target= probe)
+#   qlever   -> QLever's own /metrics (qlever profile), only when ENABLE_METRICS = true is set under
+#               [server] in qlever/Qleverfile; it requires the Qleverfile's ACCESS_TOKEN
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: sparql
+    metrics_path: /probe
+    params:
+      module: [stack]
+    scrape_timeout: 25s
+    static_configs:
+      - targets:
+          - http://fuseki:3030/ds/sparql
+          # - http://oxigraph:7878/query
+          # - http://virtuoso:8890/sparql
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: sparql-exporter:9199
+
+  # - job_name: qlever
+  #   metrics_path: /metrics
+  #   params:
+  #     access-token: ["olympics_7643543846"]   # [server] ACCESS_TOKEN in qlever/Qleverfile
+  #   static_configs:
+  #     - targets: ["qlever:7001"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

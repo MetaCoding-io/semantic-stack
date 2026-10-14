@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sparnatural - semantic-stack</title>
+  <!-- Sparnatural 13.1.0 (LGPL-3.0) and YasGUI 4.2.28 (MIT) from CDNs: the page needs internet.
+       For offline use download the four bundles into this folder and change the URLs. -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/@triply/yasgui@4.2.28/build/yasgui.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/sparnatural@13.1.0/dist/browser/sparnatural.css" rel="stylesheet">
+  <link href="https://unpkg.com/sparnatural@13.1.0/dist/themes/sparnatural-theme-sea.css" rel="stylesheet">
+  <style>.yasqe .CodeMirror { height: 260px; font-size: .85em } #yasqe { display: none }</style>
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-dark"><div class="container">
+    <span class="navbar-brand">Sparnatural &middot; semantic-stack</span>
+    <span class="navbar-text">Queries go to <a id="endpoint-link" href="#" class="text-light">...</a></span>
+  </div></nav>
+
+  <div class="container my-4">
+    <p class="text-muted">Pick a class, add criteria, press play. The configuration (<a href="config.ttl">config.ttl</a>)
+      describes <code>data/sample</code>; run <code>make load</code> first so the lists have values.</p>
+    <!-- Attribute reference: https://docs.sparnatural.eu/Javascript-integration.html
+         endpoint is what the BROWSER calls: the CORS-enabled sparql-proxy on its host port. -->
+    <spar-natural
+        src="config.ttl"
+        endpoint="http://localhost:8090/sparql"
+        lang="en"
+        defaultLang="en"
+        distinct="true"
+        limit="1000"
+        submitButton="true"
+        debug="false"
+    ></spar-natural>
+    <button class="btn btn-outline-secondary btn-sm mt-3" id="sparql-toggle">Show / hide SPARQL</button>
+  </div>
+  <div class="container my-3"><div id="yasqe"></div></div>
+  <div class="container my-3"><div id="yasr"></div></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/@triply/yasgui@4.2.28/build/yasgui.min.js"></script>
+  <script src="https://unpkg.com/sparnatural@13.1.0/dist/browser/sparnatural.js"></script>
+  <script>
+    // Adapted from hello-sparnatural/main.js in the Sparnatural 13.1.0 release.
+    const sparnatural = document.querySelector("spar-natural");
+    const endpoint = sparnatural.getAttribute("endpoint");
+    document.getElementById("endpoint-link").href = endpoint;
+    document.getElementById("endpoint-link").textContent = endpoint;
+
+    const yasqe = new Yasqe(document.getElementById("yasqe"), {
+      requestConfig: { endpoint: endpoint, method: "GET", header: {} },
+      copyEndpointOnNewTab: false
+    });
+    const yasr = new Yasr(document.getElementById("yasr"), {
+      pluginOrder: ["table", "response"], defaultPlugin: "table"
+    });
+    yasqe.on("queryResponse", (_y, response, duration) => {
+      yasr.setResponse(response, duration);
+      sparnatural.enablePlayBtn();
+    });
+    sparnatural.addEventListener("queryUpdated", (e) => {
+      yasqe.setValue(sparnatural.expandSparql(e.detail.queryString));
+    });
+    sparnatural.addEventListener("submit", () => { sparnatural.disablePlayBtn(); yasqe.query(); });
+    sparnatural.addEventListener("reset", () => yasqe.setValue(""));
+    document.getElementById("sparql-toggle").onclick = () => {
+      const el = document.getElementById("yasqe");
+      el.style.display = el.style.display === "none" ? "block" : "none";
+      if (el.style.display === "block") { yasqe.setValue(yasqe.getValue()); yasqe.refresh(); }
+    };
+  </script>
+</body>
+</html>
