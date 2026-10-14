@@ -2,8 +2,8 @@
 # Smoke test: every service answers on its host port. Used by CI and `make smoke`.
 #
 # Usage: scripts/smoke.sh [check ...]
-#   default checks: landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica
-#   extra checks:   oxigraph oxigraph-data fuseki-data ontop ontop-data trifid-query rdf4j-ui graphdb
+#   default checks: landing fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica
+#   profile checks: qlever qlever-ui oxigraph oxigraph-data ontop ontop-data graphdb rdf4j-ui
 # Env: RETRIES (default 30), SLEEP seconds between retries (default 5), plus the *_PORT variables from .env.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -37,7 +37,7 @@ sparql() { http "$1" "$2?query=$SELECT1" '"head"'; }   # any SPARQL engine retur
 ask()    { http "$1" "$2?query=$(printf '%s' "$3" | sed 's/ /%20/g; s/#/%23/g; s/{/%7B/g; s/}/%7D/g; s/</%3C/g; s/>/%3E/g; s/?/%3F/g; s/:/%3A/g; s/\//%2F/g')" 'true'; }
 
 checks=("$@")
-[ ${#checks[@]} -eq 0 ] && checks=(landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica)
+[ ${#checks[@]} -eq 0 ] && checks=(landing fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica)
 
 echo "Smoke test (retries=$RETRIES, sleep=${SLEEP}s)"
 for c in "${checks[@]}"; do
