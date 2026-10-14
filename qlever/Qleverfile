@@ -3,7 +3,7 @@
 #
 # To index your own data: drop your .ttl/.nt files into ./qlever/, change NAME, INPUT_FILES and
 # CAT_INPUT_FILES below, remove GET_DATA_CMD, then run:
-#   docker compose --profile setup run --rm qlever-index && docker compose restart qlever qlever-ui
+#   make qlever-index && docker compose --profile qlever restart qlever qlever-ui
 # Full reference: https://github.com/qlever-dev/qlever-control
 
 [data]

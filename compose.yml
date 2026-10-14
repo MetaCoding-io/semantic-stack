@@ -1,15 +1,16 @@
 # semantic-stack: a turnkey semantic-web / knowledge-graph stack.
 #
-#   docker compose --profile setup run --rm qlever-index   # one-time: build the QLever index (Olympics demo data)
-#   docker compose up -d                                   # start everything
-#   ./scripts/load.sh                                      # load data/sample into Fuseki
-#   open http://localhost:8080                             # landing page linking every service
+#   docker compose up -d          # start the default stack (Fuseki is the primary store)
+#   ./scripts/load.sh             # load data/sample into Fuseki
+#   open http://localhost:8080    # landing page linking every service
 #
-# Variants (override files, see README):
-#   docker compose -f compose.yml -f compose.oxigraph.yml up -d   # Oxigraph as primary store (no indexing step)
-#   docker compose -f compose.yml -f compose.fuseki.yml   up -d   # Fuseki as primary store
-#
-# Optional profiles: setup (QLever indexing), tools (CLI tools), jupyter, ontop, graphdb
+# Optional profiles add engines and tools (docker compose --profile <name> up -d, or COMPOSE_PROFILES in .env):
+#   qlever        QLever + QLever UI (run `--profile qlever-index run --rm qlever-index` once first; `make qlever-up` does both)
+#   oxigraph      Oxigraph, a lightweight Rust store
+#   graphdb       Ontotext GraphDB Free
+#   tools         Python toolbox, RMLMapper, YARRRML (CLI)
+#   jupyter       JupyterLab with the toolbox
+#   ontop         Postgres + Ontop virtual knowledge graph
 #
 # URL rule of thumb: anything a *browser* loads (Blueprint, the QLever UI backend setting)
 # must use localhost:<host port>; anything a *container* calls (Trifid, Comunica) uses the
@@ -46,17 +47,18 @@ services:
       retries: 3
 
   # ---------------------------------------------------------------- triple stores
-  # QLever: very fast read-mostly SPARQL engine (Wikidata scale). Needs a one-time index
-  # build (see the qlever-index service). SPARQL endpoint: http://qlever:7001 (POST or GET ?query=).
-  # The server is API-only; the UI is the separate qlever-ui service.
+  # QLever (profile: qlever): very fast SPARQL engine for large, read-mostly graphs (Wikidata
+  # scale). Needs a one-time index build (qlever-index). Endpoint: http://qlever:7001 (POST or
+  # GET ?query=). The server is API-only; the UI is the separate qlever-ui service.
   qlever:
     <<: [*qlever, *restart]
+    profiles: [qlever]
     command:
       - -c
       - |
         if ! ls ./*.index.* >/dev/null 2>&1; then
           echo 'QLever: no index found in ./qlever. Build one first:'
-          echo '  docker compose --profile setup run --rm qlever-index'
+          echo '  docker compose --profile qlever-index run --rm qlever-index   (or: make qlever-up)'
           sleep 30
           exit 1
         fi
@@ -71,10 +73,11 @@ services:
       start_period: 30s
 
   # One-shot job: download the demo dataset named in qlever/Qleverfile and build the index.
-  # Re-run after editing qlever/Qleverfile to index your own data.
+  # Re-run after editing qlever/Qleverfile to index your own data. Its own profile so that
+  # `--profile qlever up` does not re-index on every start.
   qlever-index:
     <<: *qlever
-    profiles: [setup]
+    profiles: [qlever-index]
     command:
       - -c
       - qlever get-data && qlever index --overwrite-existing
@@ -83,6 +86,7 @@ services:
   qlever-ui:
     image: adfreiburg/qlever-ui:latest   # upstream publishes no version tags
     <<: *restart
+    profiles: [qlever]
     environment:
       QLEVER_UI_BACKEND_SLUG: olympics
       QLEVER_UI_BACKEND_URL: "http://localhost:${QLEVER_PORT:-7001}"
@@ -92,8 +96,8 @@ services:
     ports:
       - "${QLEVER_UI_PORT:-7000}:7000"
 
-  # Apache Jena Fuseki: the general-purpose store. SPARQL 1.1 Query + Update, Graph Store
-  # Protocol, SHACL endpoint, Lucene text index, TDB persistence.
+  # Apache Jena Fuseki: the primary store. SPARQL 1.1 Query + Update, Graph Store Protocol,
+  # SHACL endpoint, Lucene text index, TDB persistence. Trifid, Blueprint and Comunica point here.
   #   query:  http://fuseki:3030/ds/sparql     update: http://fuseki:3030/ds/update
   #   data:   http://fuseki:3030/ds/data       shacl:  http://fuseki:3030/ds/shacl
   # Note: the dataset uses unionDefaultGraph, so load data into a *named* graph
@@ -118,6 +122,19 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+
+  # Oxigraph (profile: oxigraph): lightweight Rust store with a built-in YASGUI at :7878.
+  #   query: http://oxigraph:7878/query   update: /update   graph store: /store
+  # --union-default-graph makes default-graph queries see every named graph, like Fuseki's dataset.
+  oxigraph:
+    profiles: [oxigraph]
+    image: oxigraph/oxigraph:0.5.11
+    <<: *restart
+    volumes:
+      - oxigraph_data:/data
+    command: ["serve", "--location", "/data", "--bind", "0.0.0.0:7878", "--cors", "--union-default-graph"]
+    ports:
+      - "${OXIGRAPH_PORT:-7878}:7878"
 
   # ---------------------------------------------------------------- repository management
   # RDF4J Server + Workbench. Add your stores under Repositories > New > "SPARQL endpoint proxy"
@@ -171,16 +188,24 @@ services:
       - ./data:/data:ro
     ports:
       - "${WEBVOWL_PORT:-8083}:8080"
+    healthcheck:   # the image's own check polls every 30s; poll faster so `up --wait` returns sooner
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/serverTimeStamp"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
 
   # Trifid (Zazuko): Linked Data frontend. Dereferences resource IRIs, ships a YASGUI SPARQL
   # console at /sparql, Graph Explorer at /graph-explorer and a CORS-friendly proxy at /query.
-  # DATASET_BASE_URL makes http://localhost:8084/resource/... resolve IRIs minted under that base.
+  # DATASET_BASE_URL = the base the data's IRIs are minted under; data/sample uses
+  # http://localhost:8084/, so http://localhost:8084/service/fuseki dereferences out of the box.
+  # Point it at another store with TRIFID_SPARQL_ENDPOINT_URL in .env.
   trifid:
     image: ghcr.io/zazuko/trifid:v6
     <<: *restart
     environment:
-      SPARQL_ENDPOINT_URL: http://qlever:7001
-      DATASET_BASE_URL: http://wallscope.co.uk/   # base of the Olympics demo IRIs
+      SPARQL_ENDPOINT_URL: ${TRIFID_SPARQL_ENDPOINT_URL:-http://fuseki:3030/ds/sparql}
+      DATASET_BASE_URL: ${TRIFID_DATASET_BASE_URL:-http://localhost:${TRIFID_PORT:-8084}/}
     ports:
       - "${TRIFID_PORT:-8084}:8080"
 
@@ -194,24 +219,23 @@ services:
       ENDPOINT_URL: "http://localhost:${TRIFID_PORT:-8084}/query"
       SPARQL_CONSOLE_URL: "http://localhost:${TRIFID_PORT:-8084}/sparql/#query"
       GRAPH_EXPLORER_URL: "http://localhost:${TRIFID_PORT:-8084}/graph-explorer/?resource"
-      FULL_TEXT_SEARCH_DIALECT: qlever
+      FULL_TEXT_SEARCH_DIALECT: ${BLUEPRINT_FTS_DIALECT:-fuseki}   # fuseki | qlever | stardog | graphdb | neptune
       SKIP_AUTHENTICATION: "true"
       LINK_CONFIGURATION: app
     ports:
       - "${BLUEPRINT_PORT:-8085}:80"
 
   # ---------------------------------------------------------------- federated querying
-  # Comunica as an HTTP SPARQL endpoint federating over every store in the stack.
+  # Comunica as an HTTP SPARQL endpoint federating over the stores in COMUNICA_SOURCES
+  # (space-separated; add sparql@http://qlever:7001 or sparql@http://oxigraph:7878/query in .env
+  # when those profiles are up; an unreachable source fails the whole query).
   #   http://localhost:8087/sparql?query=...
   comunica:
     image: comunica/query-sparql:v5.2.4
     <<: *restart
-    entrypoint: ["node", "./bin/http.js"]
-    command:
-      - "-p"
-      - "8080"
-      - "sparql@http://qlever:7001"
-      - "sparql@http://fuseki:3030/ds/sparql"
+    environment:
+      COMUNICA_SOURCES: ${COMUNICA_SOURCES:-sparql@http://fuseki:3030/ds/sparql}
+    entrypoint: ["sh", "-c", "exec node ./bin/http.js -p 8080 $$COMUNICA_SOURCES"]
     ports:
       - "${COMUNICA_PORT:-8087}:8080"
 
@@ -321,6 +345,7 @@ services:
 
 volumes:
   fuseki_data:
+  oxigraph_data:
   rdf4j_data:
   openrefine_data:
   postgres_data:
