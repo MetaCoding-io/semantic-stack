@@ -1,4 +1,6 @@
 # Brings the stack up for real and checks that every service answers.
+# Jobs run in parallel; each one pulls the prebuilt images from GHCR and only rebuilds an image
+# whose Dockerfile directory changed in this push/PR, so a typical run finishes in about two minutes.
 name: smoke
 
 on:
@@ -13,67 +15,105 @@ concurrency:
   group: smoke-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read   # pull the images publish-images.yml pushed to GHCR
+
 jobs:
   config:
     name: compose config + shellcheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Validate every compose combination with all profiles
+      - name: Validate compose with every profile
         run: |
-          docker compose --profile '*' -f compose.yml config -q
-          docker compose --profile '*' -f compose.yml -f compose.oxigraph.yml config -q
-          docker compose --profile '*' -f compose.yml -f compose.fuseki.yml config -q
+          docker compose config -q
+          docker compose --profile '*' config -q
           docker compose --profile '*' -f compose.yml -f examples/compose.external-network.yml config -q
       - name: shellcheck
         run: shellcheck scripts/*.sh qlever-ui/*.sh
 
   default-stack:
-    name: default stack (QLever primary)
+    name: default stack (Fuseki primary)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - name: Run QLever as the runner's user so it can write ./qlever
+      - uses: dorny/paths-filter@v3
+        id: changed
+        with:
+          filters: |
+            webvowl: ['webvowl/**']
+            openrefine: ['openrefine/**']
+            pyshacl: ['pyshacl/**']
+            shacl-play: ['shacl-play/**']
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull prebuilt images (build the ones whose Dockerfile changed)
         run: |
-          echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"
-          echo "QLEVER_GID=$(id -g)" >> "$GITHUB_ENV"
-      - name: Build local images
-        run: docker compose build openrefine webvowl pyshacl shacl-play
-      - name: Build the QLever index (Olympics demo data)
-        run: docker compose --profile setup run --rm qlever-index
+          set -x
+          if [ "${{ steps.changed.outputs.webvowl }}" = "true" ];    then docker compose build webvowl;    else docker compose pull webvowl    || docker compose build webvowl;    fi
+          if [ "${{ steps.changed.outputs.openrefine }}" = "true" ]; then docker compose build openrefine; else docker compose pull openrefine || docker compose build openrefine; fi
+          if [ "${{ steps.changed.outputs.pyshacl }}" = "true" ];    then docker compose build pyshacl;    else docker compose pull pyshacl    || docker compose build pyshacl;    fi
+          if [ "${{ steps.changed.outputs.shacl-play }}" = "true" ]; then docker compose build shacl-play; else docker compose pull shacl-play || docker compose build shacl-play; fi
       - name: Start the stack
-        run: docker compose up -d --wait --wait-timeout 420
+        run: docker compose up -d --wait --wait-timeout 300
       - name: Load sample data
         run: ./scripts/load.sh
       - name: Smoke test
-        run: ./scripts/smoke.sh landing qlever qlever-ui fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica sparql-proxy skosmos skosmos-data sparklis shacl-play pyshacl pyshacl-validate sparql-anything
+        run: |
+          ./scripts/smoke.sh
+          ./scripts/smoke.sh skosmos-data pyshacl-validate
       - name: Logs on failure
         if: failure()
         run: |
           docker compose ps -a
           docker compose logs --tail 150
 
-  oxigraph-stack:
-    name: oxigraph variant
+  qlever-profile:
+    name: qlever profile
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - name: Start the Oxigraph variant (image-only services)
-        run: docker compose -f compose.yml -f compose.oxigraph.yml up -d --wait --wait-timeout 300 landing oxigraph fuseki trifid comunica blueprint sparql-proxy
-      - name: Load sample data into Fuseki and Oxigraph
-        run: ./scripts/load.sh
+      - name: Run QLever as the runner's user so it can write ./qlever
+        run: |
+          echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "QLEVER_GID=$(id -g)" >> "$GITHUB_ENV"
+      - name: Build the QLever index (Olympics demo data)
+        run: docker compose --profile qlever-index run --rm qlever-index
+      - name: Start QLever and its UI
+        run: docker compose --profile qlever up -d --wait --wait-timeout 180 qlever qlever-ui
       - name: Smoke test
-        run: ./scripts/smoke.sh landing oxigraph oxigraph-data fuseki fuseki-data trifid trifid-query blueprint comunica sparql-proxy
+        run: ./scripts/smoke.sh qlever qlever-ui
       - name: Logs on failure
         if: failure()
-        run: docker compose -f compose.yml -f compose.oxigraph.yml logs --tail 150
+        run: docker compose --profile qlever logs --tail 150
 
-  ontop-stack:
+  oxigraph-profile:
+    name: oxigraph profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Start Oxigraph
+        run: docker compose --profile oxigraph up -d --wait --wait-timeout 120 oxigraph
+      - name: Load sample data into Oxigraph
+        run: ./scripts/load.sh
+      - name: Smoke test
+        run: ./scripts/smoke.sh oxigraph oxigraph-data
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --profile oxigraph logs --tail 150
+
+  ontop-profile:
     name: ontop profile
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - name: Start Postgres + Ontop
@@ -87,11 +127,23 @@ jobs:
   tools-image:
     name: tools image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - name: Build
-        run: docker compose --profile tools build tools
+      - uses: dorny/paths-filter@v3
+        id: changed
+        with:
+          filters: |
+            tools: ['tools/**']
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull the prebuilt toolbox (build it when tools/ changed)
+        run: |
+          if [ "${{ steps.changed.outputs.tools }}" = "true" ]; then docker compose --profile tools build tools; else docker compose --profile tools pull tools || docker compose --profile tools build tools; fi
       - name: pySHACL validates the sample data
         run: docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
       - name: LinkML generators run

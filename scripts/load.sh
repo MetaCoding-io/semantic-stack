@@ -2,7 +2,7 @@
 # Load the sample dataset into the stores that accept writes over HTTP.
 #   Fuseki   -> named graph via the Graph Store Protocol (the dataset uses unionDefaultGraph,
 #               so data in a *named* graph is what default-graph queries see)
-#   Oxigraph -> same, only when it is running (compose.oxigraph.yml)
+#   Oxigraph -> same, only when it is running (profile oxigraph)
 # QLever is read-only at runtime: index files with `make qlever-index` instead.
 #
 # Usage: scripts/load.sh [file.ttl ...]      (default: data/sample/*.ttl)
@@ -48,5 +48,5 @@ if curl -sf -o /dev/null "$OXIGRAPH_URL/query?query=ASK%7B%7D"; then
   done
   echo "Oxigraph triples in graph: $(count "$OXIGRAPH_URL/query")"
 else
-  echo "Oxigraph not running, skipped (start it with compose.oxigraph.yml)"
+  echo "Oxigraph not running, skipped (start it with: make oxigraph-up)"
 fi

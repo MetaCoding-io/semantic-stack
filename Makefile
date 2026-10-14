@@ -4,15 +4,12 @@ export QLEVER_UID ?= $(shell id -u)
 export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs qlever-index load smoke oxigraph-up fuseki-up tools validate jupyter-up ontop-up graphdb-up build clean
+.PHONY: help up down restart ps logs load smoke qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up build clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-qlever-index: ## One-time: download the Olympics demo data and build the QLever index
-	$(COMPOSE) --profile setup run --rm qlever-index
-
-up: ## Start the default stack (QLever primary)
+up: ## Start the default stack (Fuseki primary)
 	$(COMPOSE) up -d
 	@echo "Landing page: http://localhost:$${LANDING_PORT:-8080}"
 
@@ -25,7 +22,7 @@ ps: ## Show service status
 	$(COMPOSE) ps
 
 logs: ## Tail logs (make logs S=fuseki for one service)
-	$(COMPOSE) logs -f --tail=100 $(S)
+	$(COMPOSE) --profile '*' logs -f --tail=100 $(S)
 
 build: ## Build the locally built images (WebVOWL, OpenRefine, SHACL Play, pySHACL, tools, Ontop)
 	$(COMPOSE) --profile '*' build
@@ -33,14 +30,18 @@ build: ## Build the locally built images (WebVOWL, OpenRefine, SHACL Play, pySHA
 load: ## Load data/sample into Fuseki (and Oxigraph when it is running)
 	./scripts/load.sh
 
-smoke: ## Check that every service answers
-	./scripts/smoke.sh
+smoke: ## Check that every service answers (add checks: make smoke S="qlever oxigraph")
+	./scripts/smoke.sh $(S)
 
-oxigraph-up: ## Start the Oxigraph variant instead of QLever
-	$(COMPOSE) -f compose.yml -f compose.oxigraph.yml up -d
+qlever-index: ## Download the Olympics demo data and build the QLever index (one-time, or after editing qlever/Qleverfile)
+	$(COMPOSE) --profile qlever-index run --rm qlever-index
 
-fuseki-up: ## Start with Fuseki as the primary store (no QLever)
-	$(COMPOSE) -f compose.yml -f compose.fuseki.yml up -d
+qlever-up: ## Add QLever + QLever UI (builds the index first if there is none)
+	@ls qlever/*.index.* >/dev/null 2>&1 || $(MAKE) qlever-index
+	$(COMPOSE) --profile qlever up -d
+
+oxigraph-up: ## Add Oxigraph on http://localhost:7878
+	$(COMPOSE) --profile oxigraph up -d
 
 tools: ## Open a shell in the Python tools container (rdflib, pySHACL, LinkML, pyLODE, jelly-cli)
 	$(COMPOSE) --profile tools run --rm tools

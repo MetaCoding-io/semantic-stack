@@ -34,23 +34,23 @@
 
   <h2>Triple stores</h2>
   <div class="grid">
-    <div class="card"><h3><span class="dot" data-probe="http://localhost:7001/"></span><a href="http://localhost:7001/">QLever</a></h3>
-      <p>Primary store of the default stack. Very fast, read-mostly, needs the one-time <code>qlever-index</code> step. Serves the Olympics demo data.</p>
-      <div class="links"><a href="http://localhost:7000/">QLever UI</a><a href="http://localhost:7001/?query=SELECT%20*%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%2010">raw SPARQL</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:3030/ds/sparql?query=ASK%7B%7D"></span><a href="http://localhost:3030/">Apache Jena Fuseki</a></h3>
-      <p>General-purpose store with SPARQL Update, Graph Store Protocol, SHACL and text index. Login <code>admin</code> / <code>admin</code>. Holds <code>data/sample</code> after <code>make load</code>.</p>
+      <p><strong>Primary store.</strong> SPARQL Query and Update, Graph Store Protocol, SHACL and text index. Login <code>admin</code> / <code>admin</code>. Holds <code>data/sample</code> after <code>make load</code>.</p>
       <div class="links"><a href="http://localhost:3030/#/dataset/ds/query">query UI</a><a href="http://localhost:3030/ds/sparql">/ds/sparql</a><a href="http://localhost:3030/ds/update">/ds/update</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:7001/"></span><a href="http://localhost:7001/">QLever</a></h3>
+      <p>Profile <code>qlever</code> (<code>make qlever-up</code>). Very fast engine for large, read-mostly graphs; indexed once. Serves the Olympics demo (1.8M triples).</p>
+      <div class="links"><a href="http://localhost:7000/">QLever UI</a><a href="http://localhost:7001/?query=SELECT%20*%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%2010">raw SPARQL</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:7878/query?query=ASK%7B%7D"></span><a href="http://localhost:7878/">Oxigraph</a></h3>
-      <p>Alternative primary store, zero setup. Only runs with <code>compose.oxigraph.yml</code>.</p>
+      <p>Profile <code>oxigraph</code> (<code>make oxigraph-up</code>). Lightweight Rust store, zero setup, built-in YASGUI.</p>
       <div class="links"><a href="http://localhost:7878/query">/query</a><a href="http://localhost:7878/update">/update</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:7200/rest/repositories"></span><a href="http://localhost:7200/">GraphDB</a></h3>
-      <p>Ontotext GraphDB Free. Optional: <code>make graphdb-up</code>.</p></div>
+      <p>Profile <code>graphdb</code> (<code>make graphdb-up</code>). Ontotext GraphDB Free.</p></div>
   </div>
 
   <h2>Query, browse, visualise</h2>
   <div class="grid">
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8084/sparql/"></span><a href="http://localhost:8084/">Trifid</a></h3>
-      <p>Linked Data frontend over the primary store: dereferenceable IRIs, YASGUI console, Graph Explorer, CORS proxy.</p>
+      <p>Linked Data frontend over Fuseki: dereferenceable IRIs (try <a href="http://localhost:8084/service/fuseki">/service/fuseki</a> after <code>make load</code>), YASGUI console, Graph Explorer, CORS proxy.</p>
       <div class="links"><a href="http://localhost:8084/sparql/">SPARQL console</a><a href="http://localhost:8084/graph-explorer/">Graph Explorer</a><a href="http://localhost:8084/query">/query proxy</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8085/"></span><a href="http://localhost:8085/">Blueprint</a></h3>
       <p>Knowledge-graph browser. Needs a Blueprint configuration graph in the store before it shows anything.</p></div>
@@ -59,12 +59,12 @@
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8082/rdf4j-workbench/"></span><a href="http://localhost:8082/rdf4j-workbench/">RDF4J Workbench</a></h3>
       <p>Repository manager. Add a "SPARQL endpoint proxy" repository pointing at <code>http://qlever:7001</code> or <code>http://fuseki:3030/ds/sparql</code>.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8087/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8087/sparql?query=SELECT%20(COUNT(*)%20AS%20%3Fn)%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D">Comunica</a></h3>
-      <p>Federated SPARQL endpoint over every store in the stack at <code>/sparql</code>.</p></div>
+      <p>Federated SPARQL endpoint at <code>/sparql</code>. Add QLever or Oxigraph to its sources with <code>COMUNICA_SOURCES</code> in <code>.env</code>.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8090/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8090/sparql">sparql-proxy</a></h3>
-      <p>Cache, job queue and concurrency limit in front of the primary store; rejects SPARQL Update. The read-only, CORS-enabled endpoint to hand to browser tools.</p>
+      <p>Cache, job queue and concurrency limit in front of Fuseki (or another store via <code>SPARQL_PROXY_BACKEND</code>); rejects SPARQL Update. The read-only, CORS-enabled endpoint to hand to browser tools.</p>
       <div class="links"><a href="http://localhost:8090/sparql">/sparql</a><a href="http://localhost:8090/admin">admin dashboard</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8092/osparklis.html"></span><a href="http://localhost:8092/?title=semantic-stack&amp;endpoint=http%3A%2F%2Flocalhost%3A8090%2Fsparql">Sparklis</a></h3>
-      <p>Build SPARQL by clicking through the data in plain English. Opens on the primary store via sparql-proxy.</p>
+      <p>Build SPARQL by clicking through the data in plain English. Opens on Fuseki via sparql-proxy.</p>
       <div class="links"><a href="http://localhost:8092/osparklis.html">full UI with endpoint picker</a></div></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:9090/"></span><a href="http://localhost:9090/">Skosmos</a></h3>
       <p>SKOS vocabulary browser and REST API over Fuseki. Shows the sample thesaurus of tool categories after <code>make load</code>.</p>
@@ -92,11 +92,12 @@
   </div>
 
   <h2>First steps</h2>
-<pre>make qlever-index   # one-time: build the QLever index (Olympics demo, ~1.8M triples)
-make up             # start everything
+<pre>make up             # start the default stack (Fuseki primary)
 make load           # load data/sample into Fuseki
-make smoke          # check every service answers</pre>
-  <div class="note">Container-to-container URLs use service names (<code>http://fuseki:3030/ds/sparql</code>). Browser URLs use <code>localhost</code>. Blueprint and the QLever UI are browser apps, so they are configured with <code>localhost</code> URLs.</div>
+make smoke          # check every service answers
+make qlever-up      # optional: add QLever + UI with the Olympics demo (indexes on first run)
+make oxigraph-up    # optional: add Oxigraph</pre>
+  <div class="note">Container-to-container URLs use service names (<code>http://fuseki:3030/ds/sparql</code>). Browser URLs use <code>localhost</code>. Blueprint and the QLever UI are browser apps, so they are configured with <code>localhost</code> URLs. Grey dots are services whose profile is not running.</div>
 
   <footer>A <a href="https://metacoding.io">MetaCoding</a> project. Source and documentation: <a href="https://github.com/MetaCoding-io/semantic-stack">github.com/MetaCoding-io/semantic-stack</a>.</footer>
 </main>

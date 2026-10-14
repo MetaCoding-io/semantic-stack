@@ -4,7 +4,7 @@ Mounted into most containers as `/data`. Drop your own files here.
 
 | Path | What it is |
 |---|---|
-| `sample/semantic-stack.ttl` | Small demo dataset: the stack describing itself. Loaded into Fuseki (and Oxigraph) by `scripts/load.sh`. |
+| `sample/semantic-stack.ttl` | Small demo dataset: the stack describing itself. Loaded into Fuseki (and Oxigraph when the `oxigraph` profile is up) by `scripts/load.sh`. |
 | `sample/semantic-stack-vocab.ttl` | The vocabulary behind it. Visualise it in WebVOWL, document it with pyLODE, or use it as the Ontop ontology. |
 | `sample/shapes.ttl` | SHACL shapes for the sample data. Validate with pySHACL (CLI or the `pyshacl` service), rudof, SHACL Play or Fuseki's `/ds/shacl` endpoint. |
 | `sample/semantic-stack-skos.ttl` | The tool categories as a SKOS thesaurus. Browse it in Skosmos once loaded. |
@@ -14,6 +14,5 @@ Mounted into most containers as `/data`. Drop your own files here.
 | `linkml/semantic-stack.yaml` | The same model as a LinkML schema; generate OWL, SHACL, JSON Schema or Pydantic from it. |
 | `out/` | Ignored by git; put generated files here. |
 
-The sample IRIs live under `http://localhost:8084/` so Trifid can dereference them, e.g.
-<http://localhost:8084/service/fuseki> when Trifid points at a store that holds the sample data
-(`compose.oxigraph.yml` or `compose.fuseki.yml`).
+The sample IRIs live under `http://localhost:8084/` so Trifid can dereference them: after
+`make load`, <http://localhost:8084/service/fuseki> resolves.
