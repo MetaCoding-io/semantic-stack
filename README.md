@@ -26,9 +26,11 @@ developed against.
 - [🔌 SPARQL endpoints](#-sparql-endpoints)
 - [📥 Loading your own data](#-loading-your-own-data)
 - [⚙️ Configuration](#️-configuration)
+- [📸 Screenshots](#-screenshots)
 - [🗂️ Repository layout](#️-repository-layout)
 - [⚠️ Known limitations](#️-known-limitations)
 - [🔁 Keeping it fresh](#-keeping-it-fresh)
+- [🧭 Roadmap](#-roadmap)
 
 ---
 
@@ -305,6 +307,23 @@ another compose project (for example a monorepo whose services need `http://fuse
 
 ---
 
+## 📸 Screenshots
+
+Every UI in the stack can be captured with a headless Chromium, grouped the same way as the
+profiles (`screenshots/targets.json`):
+
+```bash
+make up && make load
+make screenshots                         # default group -> screenshots/out/index.html
+make screenshots G="stores apis"         # profile groups (start their profiles first)
+```
+
+The [screenshots workflow](.github/workflows/screenshots.yml) does the same in CI, weekly and on
+demand: one job per group against the real containers, stitched into a `screenshots` artifact with
+a gallery page. Open the latest run under *Actions > screenshots* and download the artifact.
+
+---
+
 ## 🗂️ Repository layout
 
 ```text
@@ -327,6 +346,7 @@ another compose project (for example a monorepo whose services need `http://fuse
 │   ├── linkml/semantic-stack.yaml       # same model as a LinkML schema
 │   └── out/                     # generated files (git-ignored)
 │
+├── screenshots/                 # headless-browser screenshots: take.mjs, targets.json (make screenshots)
 ├── scripts/
 │   ├── load.sh                  # load data/sample into Fuseki (and Oxigraph when running)
 │   └── smoke.sh                 # every service answers? used by CI and `make smoke`
@@ -357,6 +377,7 @@ another compose project (for example a monorepo whose services need `http://fuse
 └── .github/
     ├── workflows/smoke.yml      # default stack + one job per profile, on every PR and weekly
     ├── workflows/publish-images.yml   # pushes the locally built images to GHCR
+    ├── workflows/screenshots.yml      # screenshots of every UI, weekly and on demand
     └── dependabot.yml           # compose images, Dockerfiles, pip, Actions
 ```
 
@@ -424,6 +445,18 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
   `ghcr.io/metacoding-io/semantic-stack-*` so `docker compose pull` works for everyone.
 - **Tool selection** follows the October 2026 survey in [`reports/`](reports/), with its source
   notes in `research_notes/`.
+
+---
+
+## 🧭 Roadmap
+
+- [ ] **Make the GHCR packages public** (`semantic-stack-webvowl`, `-openrefine`, `-tools`, `-ontop`, and the
+      newer ones) so `docker compose pull` works for people outside the repository. CI logs in with its
+      own token, so it does not notice.
+- [ ] **Click through the landing page by hand** after `make up && make load`: CI proves every service
+      answers, not that every page looks right.
+- [ ] **Screenshots of the default stack and each profile**: the `screenshots` workflow produces them
+      as an artifact; next step is to review a run and commit the keepers into the README.
 
 ---
 

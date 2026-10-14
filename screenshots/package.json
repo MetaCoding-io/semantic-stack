@@ -1,0 +1,9 @@
+{
+  "name": "semantic-stack-screenshots",
+  "private": true,
+  "type": "module",
+  "description": "Headless-browser screenshots of every UI in the stack (make screenshots).",
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}

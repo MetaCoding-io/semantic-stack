@@ -18,3 +18,8 @@ notebooks/.ipynb_checkpoints/
 # Leftovers from local experiments
 neo4j_db/
 Protege-*/
+
+# Screenshot runner
+screenshots/node_modules/
+screenshots/out/
+screenshots/package-lock.json

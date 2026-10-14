@@ -1,0 +1,70 @@
+{
+  "_comment": "Groups of screenshot targets. `profiles` are compose profiles to enable, `services` the ones to start ('' = all in those profiles), `load` posts data/sample first, `index` builds the QLever index first. Each target: name, url, optional `settle` (ms to wait after load), `waitFor` (CSS selector), `clip` (viewport only instead of full page). The CI matrix in .github/workflows/screenshots.yml mirrors the group names.",
+  "groups": {
+    "default": {
+      "profiles": [],
+      "services": "",
+      "load": true,
+      "targets": [
+        { "name": "landing",               "url": "http://localhost:8080/", "settle": 6000 },
+        { "name": "fuseki",                "url": "http://localhost:3030/#/dataset/ds/query", "settle": 2000 },
+        { "name": "trifid-home",           "url": "http://localhost:8084/" },
+        { "name": "trifid-resource",       "url": "http://localhost:8084/service/fuseki", "settle": 2000 },
+        { "name": "trifid-sparql",         "url": "http://localhost:8084/sparql/", "settle": 3000 },
+        { "name": "trifid-graph-explorer", "url": "http://localhost:8084/graph-explorer/?resource=http://localhost:8084/service/fuseki", "settle": 5000 },
+        { "name": "blueprint",             "url": "http://localhost:8085/", "settle": 4000 },
+        { "name": "webvowl",               "url": "http://localhost:8083/#foaf", "settle": 6000, "clip": true },
+        { "name": "rdf4j-workbench",       "url": "http://localhost:8082/rdf4j-workbench/repositories" },
+        { "name": "openrefine",            "url": "http://localhost:3333/", "settle": 3000 },
+        { "name": "sparql-proxy",          "url": "http://localhost:8090/", "settle": 2000 },
+        { "name": "sparklis",              "url": "http://localhost:8092/?title=semantic-stack&endpoint=http%3A%2F%2Flocalhost%3A8090%2Fsparql", "settle": 6000 },
+        { "name": "skosmos",               "url": "http://localhost:9090/", "settle": 3000 },
+        { "name": "sparnatural",           "url": "http://localhost:8094/", "settle": 5000 },
+        { "name": "shacl-play",            "url": "http://localhost:8091/" },
+        { "name": "pyshacl-swagger",       "url": "http://localhost:8099/docs/swagger", "settle": 2000 },
+        { "name": "comunica",              "url": "http://localhost:8087/sparql?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%2010", "clip": true }
+      ]
+    },
+    "stores": {
+      "profiles": ["qlever", "oxigraph", "graphdb", "virtuoso", "geosparql"],
+      "services": "qlever qlever-ui oxigraph graphdb virtuoso fuseki-geosparql",
+      "load": true,
+      "index": true,
+      "targets": [
+        { "name": "qlever-ui",         "url": "http://localhost:7000/", "settle": 5000 },
+        { "name": "oxigraph",          "url": "http://localhost:7878/", "settle": 3000 },
+        { "name": "graphdb",           "url": "http://localhost:7200/", "settle": 6000 },
+        { "name": "virtuoso-sparql",   "url": "http://localhost:8890/sparql" },
+        { "name": "virtuoso-conductor","url": "http://localhost:8890/conductor/", "settle": 2000 },
+        { "name": "fuseki-geosparql",  "url": "http://localhost:3031/#/dataset/ds/query", "settle": 2000 }
+      ]
+    },
+    "apis": {
+      "profiles": ["prez", "grlc", "rpt", "graph-explorer", "docs", "validation", "ontop", "solid"],
+      "services": "fuseki prez prez-ui grlc rpt graph-explorer pylode itb-shacl postgres ontop solid",
+      "load": true,
+      "targets": [
+        { "name": "prez-api-docs",     "url": "http://localhost:8000/docs", "settle": 3000 },
+        { "name": "prez-ui",           "url": "http://localhost:8001/", "settle": 5000 },
+        { "name": "grlc",              "url": "http://localhost:8088/api-local/", "settle": 4000 },
+        { "name": "rpt",               "url": "http://localhost:8642/", "settle": 3000 },
+        { "name": "graph-explorer",    "url": "http://localhost:8095/explorer", "settle": 6000 },
+        { "name": "pylode-server",     "url": "http://localhost:8096/" },
+        { "name": "itb-shacl",         "url": "http://localhost:8097/shacl/stack/upload", "settle": 2000 },
+        { "name": "ontop-portal",      "url": "http://localhost:8089/", "settle": 3000 },
+        { "name": "solid",             "url": "http://localhost:8100/" }
+      ]
+    },
+    "workbench": {
+      "profiles": ["jupyter", "observability", "lp-etl"],
+      "services": "",
+      "load": true,
+      "targets": [
+        { "name": "jupyterlab",        "url": "http://localhost:8888/lab", "settle": 8000 },
+        { "name": "grafana",           "url": "http://localhost:3000/", "settle": 4000 },
+        { "name": "prometheus-targets","url": "http://localhost:9091/targets", "settle": 2000 },
+        { "name": "lp-etl",            "url": "http://localhost:9080/", "settle": 5000 }
+      ]
+    }
+  }
+}

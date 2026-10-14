@@ -1,0 +1,118 @@
+# Screenshots of every UI in the stack, taken with headless Chromium against the real containers.
+# Runs weekly, on demand, and on PRs that touch the runner, the landing page or compose.yml.
+# Each matrix job starts one group (see screenshots/targets.json), captures its targets, and uploads
+# them; the last job stitches every group into one gallery artifact: screenshots/index.html.
+name: screenshots
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 6 * * 1"
+  pull_request:
+    paths:
+      - screenshots/**
+      - landing/**
+      - compose.yml
+      - .github/workflows/screenshots.yml
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  capture:
+    name: ${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [default, stores, apis, workbench]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read the group's plan
+        id: plan
+        run: |
+          cd screenshots
+          PLAN=$(node take.mjs plan ${{ matrix.group }})
+          echo "$PLAN"
+          echo "profiles=$(echo "$PLAN" | jq -r .profileFlags)" >> "$GITHUB_OUTPUT"
+          echo "services=$(echo "$PLAN" | jq -r .services)" >> "$GITHUB_OUTPUT"
+          echo "load=$(echo "$PLAN" | jq -r .load)" >> "$GITHUB_OUTPUT"
+          echo "index=$(echo "$PLAN" | jq -r .index)" >> "$GITHUB_OUTPUT"
+      - name: Install the browser
+        run: cd screenshots && npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Pull images (build the ones GHCR does not have)
+        run: |
+          docker compose ${{ steps.plan.outputs.profiles }} pull --ignore-buildable ${{ steps.plan.outputs.services }} || true
+          docker compose ${{ steps.plan.outputs.profiles }} pull ${{ steps.plan.outputs.services }} 2>/dev/null || docker compose ${{ steps.plan.outputs.profiles }} build ${{ steps.plan.outputs.services }} || true
+      - name: Build the QLever index
+        if: steps.plan.outputs.index == 'true'
+        run: |
+          echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"; echo "QLEVER_GID=$(id -g)" >> "$GITHUB_ENV"
+          QLEVER_UID=$(id -u) QLEVER_GID=$(id -g) docker compose --profile qlever-index run --rm qlever-index
+      - name: Start
+        run: docker compose ${{ steps.plan.outputs.profiles }} up -d ${{ steps.plan.outputs.services }}
+      - name: Load sample data
+        if: steps.plan.outputs.load == 'true'
+        run: |
+          ./scripts/smoke.sh fuseki >/dev/null 2>&1 || true
+          ./scripts/load.sh || true
+      - name: Capture
+        run: cd screenshots && node take.mjs ${{ matrix.group }} --timeout 240 ${{ matrix.group == 'default' && '--strict' || '' }}
+      - name: Summary
+        if: always()
+        run: cat screenshots/out/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose ${{ steps.plan.outputs.profiles }} ps -a
+          docker compose ${{ steps.plan.outputs.profiles }} logs --tail 60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-${{ matrix.group }}
+          path: screenshots/out
+          if-no-files-found: ignore
+          retention-days: 30
+
+  gallery:
+    name: gallery
+    needs: capture
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: screenshots-*
+          path: screenshots/out
+          merge-multiple: true
+      - name: Stitch the gallery
+        run: |
+          cd screenshots
+          # results.json from each group overwrote each other on merge; rebuild the gallery from the PNGs
+          rm -f out/results.json
+          node take.mjs gallery
+          cat out/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/out
+          retention-days: 90
