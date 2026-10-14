@@ -1,7 +1,7 @@
 # OpenRefine from the official release tarball. OpenRefine publishes no official container image,
 # and the community image the stack used before (felixlohmeier/openrefine) stopped at 3.5.0 in 2021.
 ARG OPENREFINE_VERSION=3.10.0
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:25-jre-noble
 
 ARG OPENREFINE_VERSION
 LABEL org.opencontainers.image.title="OpenRefine" \
