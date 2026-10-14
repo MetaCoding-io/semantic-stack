@@ -1,5 +1,5 @@
 #+ summary: Every service with its category and host port
-#+ description: Lists the services in data/sample grouped by category. Add ?_category to filter by category name.
+#+ description: Lists the services in data/sample grouped by category. See services_by_category to filter by category name.
 #+ method: GET
 #+ pagination: 100
 #+ tags:

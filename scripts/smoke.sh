@@ -111,7 +111,7 @@ for c in "${checks[@]}"; do
     grlc-query)  ACCEPT=application/json http grlc-query "$H:${GRLC_PORT:-8088}/api-local/services" "Fuseki" ;;
     graph-explorer) http graph-explorer "$H:${GRAPH_EXPLORER_PORT:-8095}/status" "OK" ;;
     pylode)      http   pylode      "$H:${PYLODE_PORT:-8096}/" "pyLODE" ;;
-    pylode-render) http pylode-render "$H:${PYLODE_PORT:-8096}/pylode?url=http://landing/data/sample/semantic-stack-vocab.ttl" "Service" ;;
+    pylode-render) http pylode-render "$H:${PYLODE_PORT:-8096}/pylode?url=http://landing.internal/data/sample/semantic-stack-vocab.ttl" "Service" ;;
     rpt)         sparql rpt         "$H:${RPT_PORT:-8642}/sparql" ;;
     rpt-query)   ask    rpt-query   "$H:${RPT_PORT:-8642}/sparql" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     lp-etl)      http   lp-etl      "$H:${LP_ETL_PORT:-9080}/" ;;

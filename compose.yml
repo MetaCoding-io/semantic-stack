@@ -50,9 +50,12 @@ services:
   landing:
     image: nginx:1.31-alpine
     <<: *restart
+    networks:
+      default:
+        aliases: [landing.internal]   # pyLODE's URL validator wants a dotted host: http://landing.internal/data/...
     volumes:
       - ./landing:/usr/share/nginx/html:ro
-      - ./data:/usr/share/nginx/html/data:ro   # browse ./data at http://localhost:8080/data/; pyLODE fetches it as http://landing/data/...
+      - ./data:/usr/share/nginx/html/data:ro   # browse ./data at http://localhost:8080/data/; pyLODE fetches it as http://landing.internal/data/...
     ports:
       - "${LANDING_PORT:-8080}:80"
     healthcheck:
@@ -444,7 +447,6 @@ services:
     profiles: [tools]
     image: ghcr.io/dgarijo/widoco:v1.4.25
     platform: linux/amd64   # upstream publishes amd64 only
-    user: "${QLEVER_UID:-1000}:${QLEVER_GID:-1000}"   # write data/out as the host user
     environment:
       JAVA_OPTS: "-Xmx1g"
     volumes:
@@ -685,7 +687,7 @@ services:
   # ---------------------------------------------------------------- pyLODE server (profile: docs)
   # pyLODE as a service: HTML documentation for an ontology fetched by URL (GET only). The landing
   # page serves ./data, so the sample vocabulary is reachable from inside the network:
-  #   http://localhost:8096/pylode?url=http://landing/data/sample/semantic-stack-vocab.ttl
+  #   http://localhost:8096/pylode?url=http://landing.internal/data/sample/semantic-stack-vocab.ttl
   pylode:
     profiles: [docs]
     build: ./pylode

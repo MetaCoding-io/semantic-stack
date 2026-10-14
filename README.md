@@ -235,7 +235,7 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **ROBOT** | `… robot reason --reasoner ELK --input sample/semantic-stack-vocab.ttl --output out/vocab-reasoned.ttl` | OBO Foundry OWL toolkit: reason, `report` (QC), convert, merge, extract. |
 | **Nemo** | `… nemo -D out -o nemo/dependencies.rls` | Datalog rule engine over RDF files and SPARQL endpoints; `data/nemo/dependencies.rls` derives the transitive dependency closure. |
 | **WIDOCO** | `… widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en` | Wizard-style ontology documentation with an embedded WebVOWL view; browse the output at <http://localhost:8080/data/out/widoco/>. |
-| **pyLODE server** | <http://localhost:8096> | Profile `docs`. `GET /pylode?url=…` renders any ontology reachable by URL; the landing page serves `./data` at `http://landing/data/…` for that. |
+| **pyLODE server** | <http://localhost:8096> | Profile `docs`. `GET /pylode?url=…` renders any ontology reachable by URL; the landing page serves `./data` at `http://landing.internal/data/…` for that. |
 | **ITB SHACL validator** | <http://localhost:8097/shacl/stack/upload> | Profile `validation`. Web form, REST (`POST /shacl/stack/api/validate`) and SOAP; domains live in `itb/`. |
 | **Grafana + Prometheus** | <http://localhost:3000> | Profile `observability`. SPARQL datasource over Fuseki; `prometheus/sparql-exporter.yml` turns SPARQL counts into metrics. |
 | **LinkML** | `… tools gen-owl linkml/semantic-stack.yaml` | One YAML model → OWL, SHACL, JSON Schema, Pydantic (`gen-owl`, `gen-shacl`, `gen-json-schema`, `gen-pydantic`). |
