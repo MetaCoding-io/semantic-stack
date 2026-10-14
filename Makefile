@@ -4,7 +4,7 @@ export QLEVER_UID ?= $(shell id -u)
 export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs load smoke qlever-index qlever-up oxigraph-up graphdb-up tools jupyter-up ontop-up build clean
+.PHONY: help up down restart ps logs load smoke qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up build clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -24,7 +24,7 @@ ps: ## Show service status
 logs: ## Tail logs (make logs S=fuseki for one service)
 	$(COMPOSE) --profile '*' logs -f --tail=100 $(S)
 
-build: ## Build the locally built images (WebVOWL, OpenRefine, tools, Ontop)
+build: ## Build the locally built images (WebVOWL, OpenRefine, SHACL Play, pySHACL, tools, Ontop)
 	$(COMPOSE) --profile '*' build
 
 load: ## Load data/sample into Fuseki (and Oxigraph when it is running)
@@ -43,8 +43,12 @@ qlever-up: ## Add QLever + QLever UI (builds the index first if there is none)
 oxigraph-up: ## Add Oxigraph on http://localhost:7878
 	$(COMPOSE) --profile oxigraph up -d
 
-tools: ## Open a shell in the Python tools container (rdflib, pySHACL, LinkML, pyLODE)
+tools: ## Open a shell in the Python tools container (rdflib, pySHACL, LinkML, pyLODE, jelly-cli)
 	$(COMPOSE) --profile tools run --rm tools
+
+validate: ## Validate data/sample against its SHACL shapes with pySHACL and rudof
+	$(COMPOSE) --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
+	$(COMPOSE) --profile tools run --rm rudof shacl-validate --shapes sample/shapes.ttl sample/semantic-stack.ttl
 
 jupyter-up: ## Start JupyterLab on http://localhost:8888
 	$(COMPOSE) --profile jupyter up -d jupyter

@@ -6,10 +6,11 @@
 [![Docker Compose](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](compose.yml)
 
 **A turnkey semantic web / knowledge graph stack in one `docker compose up`.**
-Apache Jena Fuseki as the store, a Linked Data frontend, ontology visualisation, data
-transformation, federated querying, SHACL validation and schema-first modelling, each on its own
-port, with sample data and a smoke test that proves every service answers. Extra engines (QLever,
-Oxigraph, GraphDB) and tools are one profile away.
+Apache Jena Fuseki as the store, a caching SPARQL proxy, a Linked Data frontend, ontology
+visualisation, a visual query builder, a SKOS vocabulary browser, data transformation, federated
+querying, SHACL validation and schema-first modelling, each on its own port, with sample data and
+a smoke test that proves every service answers. Extra engines (QLever, Oxigraph, GraphDB) and
+tools are one profile away.
 
 A [MetaCoding](https://metacoding.io) project: the local stack behind our data-centric consulting
 work and the environment [SemanticSeams](https://github.com/MetaCoding-io/SemanticSeams) is
@@ -35,7 +36,7 @@ developed against.
 
 ```bash
 git clone https://github.com/MetaCoding-io/semantic-stack.git && cd semantic-stack
-make up      # start the stack (first run builds WebVOWL and OpenRefine, a few minutes)
+make up      # start the stack (first run builds WebVOWL, OpenRefine, SHACL Play and pySHACL, several minutes)
 make load    # load data/sample into Fuseki
 make smoke   # every service answers?
 ```
@@ -46,7 +47,7 @@ green dot next to the ones your browser can reach. Try a query in the
 <http://localhost:8084/service/fuseki> to see Linked Data working end to end.
 
 > 💡 No `make`? Every target is a one-liner; `make help` prints them.
-> `docker compose pull webvowl openrefine` fetches the prebuilt images instead of building.
+> `docker compose pull webvowl openrefine shacl-play pyshacl` fetches the prebuilt images instead of building.
 
 ---
 
@@ -66,6 +67,10 @@ make up && make load
 | **Trifid** | Linked Data frontend over Fuseki: dereferenceable IRIs, SPARQL console, Graph Explorer, CORS proxy |
 | **Blueprint** | Knowledge graph browser (through Trifid's proxy) |
 | **Comunica** | Federated SPARQL endpoint, over Fuseki by default |
+| **sparql-proxy** | Caching, job-queueing, update-rejecting proxy over Fuseki: the read-only endpoint for browser tools |
+| **Sparklis** | Visual query builder over Fuseki (through sparql-proxy) |
+| **Skosmos** | SKOS vocabulary browser and REST API over Fuseki |
+| **SHACL Play**, **pySHACL service**, **SPARQL Anything** | SHACL validation and documentation, SHACL over HTTP, SPARQL over CSV/JSON/XML files |
 | **WebVOWL**, **RDF4J Workbench**, **OpenRefine** | Ontology visualisation, repository management, data cleaning |
 | **Landing page** | Links and live reachability for all of the above |
 
@@ -83,7 +88,7 @@ docker compose --profile <name> up -d        # or: make <name>-up
 | 🏎️ `qlever` | `make qlever-up` | **QLever** + **QLever UI** serving the Olympics demo (1.8M triples). Builds the index on first run. | You want to see a Wikidata-scale engine, or you have a large, read-mostly graph |
 | 🦀 `oxigraph` | `make oxigraph-up` | **Oxigraph**, a lightweight Rust store with a built-in YASGUI | You want a second writable store for comparison, or something tiny for tests |
 | 🏢 `graphdb` | `make graphdb-up` | **Ontotext GraphDB** Free | Your clients run GraphDB and you want a faithful mirror |
-| 🧰 `tools` | `make tools` | Shell in the **Python toolbox** (rdflib, pySHACL, OWL-RL, SPARQLWrapper, LinkML, pyLODE, pandas) plus the **RMLMapper** and **YARRRML** CLIs, `./data` mounted at `/data` | You want to validate, convert, model or script |
+| 🧰 `tools` | `make tools` | Shell in the **Python toolbox** (rdflib, pySHACL, OWL-RL, SPARQLWrapper, LinkML, pyLODE, pandas, jelly-cli) plus the **RMLMapper**, **YARRRML**, **SDM-RDFizer**, **rudof** and **EYE** CLIs, `./data` mounted at `/data` | You want to validate, convert, reason, model or script |
 | 📓 `jupyter` | `make jupyter-up` | **JupyterLab** with the same toolbox and `notebooks/01-hello-stack.ipynb` | You prefer notebooks |
 | 🪞 `ontop` | `make ontop-up` | **Postgres** (seeded demo tables) + **Ontop** virtual knowledge graph: SPARQL over SQL, nothing copied | You have relational data and want it as RDF without an ETL |
 
@@ -91,18 +96,36 @@ Profiles combine freely (`docker compose --profile qlever --profile oxigraph up 
 `COMPOSE_PROFILES=qlever,oxigraph` in `.env` to make them part of your default `make up`.
 
 <details>
-<summary>Pointing Trifid, Blueprint or Comunica at another store</summary>
+<summary>Pointing Trifid, Blueprint, Comunica or sparql-proxy at another store</summary>
 
-All three follow Fuseki by default. Three variables in `.env` move them:
+All of them follow Fuseki by default. Four variables in `.env` move them:
 
 ```bash
 TRIFID_SPARQL_ENDPOINT_URL=http://qlever:7001          # Trifid (and Blueprint through its proxy)
 TRIFID_DATASET_BASE_URL=http://wallscope.co.uk/        # base of the IRIs in that store (Olympics data)
 BLUEPRINT_FTS_DIALECT=qlever                           # fuseki | qlever | stardog | graphdb | neptune
 COMUNICA_SOURCES="sparql@http://fuseki:3030/ds/sparql sparql@http://qlever:7001"   # space-separated
+SPARQL_PROXY_BACKEND=http://qlever:7001                # sparql-proxy, and Sparklis through it
 ```
 
 Comunica fails a federated query if any listed source is down, so only list stores whose profile is up.
+
+</details>
+
+<details>
+<summary>Which store does each tool talk to?</summary>
+
+Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to one engine.
+
+| Tool | Talks to | How to change it |
+|---|---|---|
+| Trifid, Blueprint, Comunica, sparql-proxy | Fuseki | the `.env` variables above |
+| Sparklis | sparql-proxy | browser app; the landing-page link passes `?endpoint=`, so any CORS-enabled endpoint works |
+| Skosmos | Fuseki `ds` | `skosmos/config.ttl` (`skosmos:sparqlEndpoint`); `Generic` dialect works on Oxigraph, GraphDB or QLever too |
+| RDF4J Workbench | any | add a "SPARQL endpoint proxy" repository by container URL |
+| SHACL Play, pySHACL service | none (uploads) | SHACL Play's *Generate* page can read any endpoint by container URL |
+| SPARQL Anything | files in `/data` | `SERVICE <x-sparql-anything:...>`; federate to any endpoint with a second `SERVICE` |
+| RMLMapper, SDM-RDFizer, rudof, EYE, jelly-cli, toolbox | files in `/data` | load the output with `scripts/load.sh`; `rudof` and the toolbox can also query endpoints directly |
 
 </details>
 
@@ -125,6 +148,8 @@ Comunica fails a federated query if any listed source is down, so only list stor
 |---|---|---|
 | **Trifid SPARQL console** | <http://localhost:8084/sparql> | YASGUI against Fuseki, via Trifid's CORS-friendly `/query` proxy. |
 | **Comunica** | <http://localhost:8087/sparql> | One federated SPARQL endpoint; Fuseki by default, add other stores with `COMUNICA_SOURCES`. |
+| **sparql-proxy** | <http://localhost:8090/sparql> | Caching, job-queueing, update-rejecting proxy over Fuseki; dashboard at `/admin` (`admin` / `admin`). The endpoint to hand to browser tools and read-only users. |
+| **Sparklis** | <http://localhost:8092> | Visual query builder: compose SPARQL by clicking through the data in plain English. The landing page opens it on sparql-proxy. |
 | **QLever UI** | <http://localhost:7000> | Profile `qlever`. Query editor with autocompletion, preconfigured for the QLever above. |
 | **RDF4J Workbench** | <http://localhost:8082/rdf4j-workbench/> | Repository manager; add any store as a "SPARQL endpoint proxy". |
 | **Ontop** | <http://localhost:8089/sparql> | Profile `ontop`. SPARQL over a relational database. |
@@ -137,6 +162,7 @@ Comunica fails a federated query if any listed source is down, so only list stor
 | **Trifid** | <http://localhost:8084> | Linked Data frontend over Fuseki: dereferenceable IRIs (<http://localhost:8084/service/fuseki> after `make load`), Graph Explorer at `/graph-explorer`. |
 | **Blueprint** | <http://localhost:8085> | Knowledge graph browser (needs a Blueprint configuration graph, see limitations). |
 | **WebVOWL** | <http://localhost:8083> | OWL ontology visualisation with the OWL2VOWL converter. Try `data/sample/semantic-stack-vocab.ttl`. |
+| **Skosmos** | <http://localhost:9090> | SKOS vocabulary browser and REST API over Fuseki. Shows `data/sample/semantic-stack-skos.ttl` after `make load`; add your own vocabularies in `skosmos/config.ttl`. |
 
 ### 🔄 Transform and map
 
@@ -145,13 +171,19 @@ Comunica fails a federated query if any listed source is down, so only list stor
 | **OpenRefine** | <http://localhost:3333> | Interactive data cleaning; `./data` is mounted read-only at `/import`. |
 | **RMLMapper** | `docker compose --profile tools run --rm rmlmapper …` | CSV/JSON/XML → RDF with RML or R2RML. |
 | **YARRRML parser** | `docker compose --profile tools run --rm yarrrml …` | Human-friendly YAML → RML. Walkthrough in [data/rml/README.md](data/rml/README.md). |
+| **SDM-RDFizer** | `docker compose --profile tools run --rm sdm-rdfizer` | Second RML engine (100 % on every module of the new RML spec in the 2026 KGCW challenge); runs the same mapping via `data/rml/sdm-rdfizer.ini`. |
+| **SPARQL Anything** | <http://localhost:8093/sparql> | Query CSV, JSON, XML, HTML, spreadsheets, … as RDF with no mapping (Facade-X). Endpoint `/sparql.anything`; try `data/queries/30-sparql-anything-csv.rq`. |
 | **Ontop** | profile `ontop` | Keep the data in SQL, query it as RDF. |
 
 ### 🧪 Validate, model, document
 
 | Tool | How | Notes |
 |---|---|---|
-| **pySHACL** | `docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl` | Also available as Fuseki's `/ds/shacl` endpoint. |
+| **pySHACL** | `docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl` | Also as an HTTP service at <http://localhost:8099/docs/swagger> (`POST /validate` with `data_graph` and `shapes_graph`) and as Fuseki's `/ds/shacl` endpoint. |
+| **SHACL Play** | <http://localhost:8091> | Validate with readable reports, document shapes as HTML and UML, generate shapes from data, OWL → SHACL, SHACL rules. |
+| **rudof** | `… rudof shacl-validate --shapes sample/shapes.ttl sample/semantic-stack.ttl` | ShEx + SHACL + DCTAP validation and conversion in one binary. `make validate` runs pySHACL and rudof. |
+| **EYE** | `… eye --quiet --nope n3/socrates.n3 --pass` | Notation3 reasoner; `data/n3/socrates.n3` is the classic example. |
+| **jelly-cli** | `… tools sh -c 'jelly-cli rdf to-jelly sample/semantic-stack.ttl > out/semantic-stack.jelly'` | Jelly binary RDF streaming, readable by Jena, RDF4J, Morph-KGC and TopQuadrant SHACL. |
 | **LinkML** | `… tools gen-owl linkml/semantic-stack.yaml` | One YAML model → OWL, SHACL, JSON Schema, Pydantic (`gen-owl`, `gen-shacl`, `gen-json-schema`, `gen-pydantic`). |
 | **pyLODE** | `… tools pylode sample/semantic-stack-vocab.ttl -o out/vocab.html` | HTML documentation for an ontology. |
 | **Jena CLI** | `docker compose exec fuseki /jena/bin/riot --validate /data/sample/semantic-stack.ttl` | `riot`, `sparql`, `shacl` and friends ship inside the Fuseki image. |
@@ -171,6 +203,8 @@ RDF 1.2 and SPARQL 1.2.
 | Oxigraph (profile) | `http://oxigraph:7878/query` | `http://localhost:7878/query` | `/update`, `/store` |
 | Comunica | `http://comunica:8080/sparql` | `http://localhost:8087/sparql` | no |
 | Trifid proxy | `http://trifid:8080/query` | `http://localhost:8084/query` | no |
+| sparql-proxy | `http://sparql-proxy:3000/sparql` | `http://localhost:8090/sparql` | rejected by design |
+| SPARQL Anything | `http://sparql-anything:3000/sparql.anything` | `http://localhost:8093/sparql.anything` | no (files) |
 | Ontop | `http://ontop:8080/sparql` | `http://localhost:8089/sparql` | no (virtual) |
 
 > 🧭 **Browser URLs versus container URLs.** Services talk to each other by service name
@@ -188,7 +222,9 @@ RDF 1.2 and SPARQL 1.2.
 | **QLever** | Copy your `.ttl`/`.nt` into `./qlever/`, edit `qlever/Qleverfile` (`NAME`, `INPUT_FILES`, drop `GET_DATA_CMD`), then `make qlever-index` and `docker compose --profile qlever restart qlever qlever-ui`. |
 | **From CSV/JSON/XML** | Write a YARRRML mapping, run `yarrrml` then `rmlmapper` ([data/rml/README.md](data/rml/README.md)), load the output. |
 | **From a SQL database** | Point the `ontop` profile at it: edit `ontop/input/mapping.obda` and the `ONTOP_DB_*` variables. Nothing gets copied. |
-| **Validate first** | pySHACL from the toolbox, or POST shapes to Fuseki's `/ds/shacl`. |
+| **Skip the mapping** | Query the file directly with SPARQL Anything: `data/queries/30-sparql-anything-csv.rq` reads `data/rml/services.csv` as RDF. |
+| **Validate first** | `make validate` (pySHACL and rudof), SHACL Play at <http://localhost:8091/validate>, `POST` to the pySHACL service at `:8099/validate`, or POST shapes to Fuseki's `/ds/shacl`. |
+| **Publish a vocabulary** | Load a SKOS file into a named graph in Fuseki and add a `skosmos:Vocabulary` block to `skosmos/config.ttl` (its comments explain each property). |
 
 > ℹ️ Fuseki's `ds` dataset treats the default graph as the union of all named graphs, so load into
 > a named graph (the script does) rather than the default graph.
@@ -200,7 +236,7 @@ Sample data, example queries, RML and LinkML examples live in [`data/`](data/REA
 ## ⚙️ Configuration
 
 Copy `.env.example` to `.env` to change ports, passwords, default profiles (`COMPOSE_PROFILES`)
-or which store Trifid and Comunica use. Every value has a default inside `compose.yml`, so `.env`
+or which store Trifid, Comunica and sparql-proxy use. Every value has a default inside `compose.yml`, so `.env`
 is optional.
 
 On Linux, QLever writes its index into `./qlever` as `QLEVER_UID:QLEVER_GID` (default `1000:1000`).
@@ -224,9 +260,11 @@ another compose project (for example a monorepo whose services need `http://fuse
 │   ├── sample/
 │   │   ├── semantic-stack.ttl           # demo dataset: the stack describing itself
 │   │   ├── semantic-stack-vocab.ttl     # its vocabulary (WebVOWL, pyLODE, Ontop ontology)
+│   │   ├── semantic-stack-skos.ttl      # the tool categories as a SKOS thesaurus (Skosmos)
 │   │   └── shapes.ttl                   # SHACL shapes for the demo data
-│   ├── queries/                 # 01-03 sample data · 10-11 Olympics (QLever) · 20 federated (Comunica)
-│   ├── rml/                     # services.csv + YARRRML mapping, with README
+│   ├── queries/                 # 01-03 sample data · 10-11 Olympics (QLever) · 20 federated · 30 SPARQL Anything
+│   ├── rml/                     # services.csv + YARRRML mapping + SDM-RDFizer config, with README
+│   ├── n3/socrates.n3           # Notation3 rules for EYE
 │   ├── linkml/semantic-stack.yaml       # same model as a LinkML schema
 │   └── out/                     # generated files (git-ignored)
 │
@@ -240,11 +278,15 @@ another compose project (for example a monorepo whose services need `http://fuse
 │
 ├── openrefine/Dockerfile        # OpenRefine from the official release tarball
 ├── webvowl/Dockerfile           # WebVOWL + OWL2VOWL built from upstream source
-├── tools/                       # Python toolbox image: Dockerfile, requirements.in, requirements.txt
+├── shacl-play/Dockerfile        # SHACL Play built from upstream source at a pinned release
+├── pyshacl/Dockerfile           # pySHACL HTTP service from the pinned PyPI release
+├── skosmos/config.ttl           # Skosmos endpoint + vocabulary configuration
+├── tools/                       # Python toolbox image (+ jelly-cli): Dockerfile, requirements.in, requirements.txt
 ├── ontop/                       # Dockerfile (adds the Postgres JDBC driver), input/ mapping, postgres/ seed
 ├── notebooks/01-hello-stack.ipynb   # JupyterLab starter
 │
 ├── examples/compose.external-network.yml   # join another compose project's network
+├── reports/, research_notes/    # the October 2026 tool survey this selection is based on
 ├── .devcontainer/devcontainer.json         # VS Code dev container on the toolbox image
 └── .github/
     ├── workflows/smoke.yml      # default stack + one job per profile, on every PR and weekly
@@ -272,6 +314,16 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
 - **QLever** (profile) publishes no release tags, only `latest` and per-commit tags, so the stack
   pins a commit tag. Dependabot will not bump it; do so by hand. Its SPARQL Update support needs
   an access token and lives on top of the prebuilt index, which is why it is not the default.
+- **sparql-proxy** and **Sparklis** publish no release tags either: the proxy is pinned to a
+  `snapshot-*` tag, Sparklis by digest (its only image dates from January 2023, older than the
+  current source). Bump both by hand.
+- **Sparklis, rudof, EYE and SDM-RDFizer** ship amd64 images only; on Apple Silicon they run under
+  emulation (`platform: linux/amd64` is set).
+- **SPARQL Anything** is pinned to the 1.2.0 release. 1.3.0 (release candidates since October 2026)
+  renames `fx:root` to `fx:Root` and moves engine options to the `fxe:` namespace; bump when it is final.
+- **Skosmos** uses the plain-SPARQL `Generic` dialect against Fuseki's `ds` dataset, so search is
+  regex-based. For large vocabularies create a dedicated Fuseki dataset with a jena-text index over
+  the SKOS label properties and switch `skosmos/config.ttl` to the `JenaText` dialect.
 - **Default credentials** (`admin`/`admin`, `stack`/`stack`) are for local use. Change them in
   `.env` before exposing any port.
 
@@ -285,8 +337,11 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
   only when its Dockerfile changed, so a run takes about two minutes.
 - **Dependabot** ([dependabot.yml](.github/dependabot.yml)) opens PRs for image tags in the compose
   files and Dockerfiles, the Python packages in `tools/requirements.txt` and the Actions.
-- **Images** ([publish-images.yml](.github/workflows/publish-images.yml)) are pushed to
+- **Images** ([publish-images.yml](.github/workflows/publish-images.yml)) for WebVOWL,
+  OpenRefine, the toolbox, Ontop, pySHACL and SHACL Play are pushed to
   `ghcr.io/metacoding-io/semantic-stack-*` so `docker compose pull` works for everyone.
+- **Tool selection** follows the October 2026 survey in [`reports/`](reports/), with its source
+  notes in `research_notes/`.
 
 ---
 

@@ -1,0 +1,12 @@
+# SPARQL Anything: query data/rml/services.csv as RDF without any mapping (Facade-X).
+# Paste into http://localhost:8093/sparql or send to http://localhost:8093/sparql.anything
+PREFIX fx:  <http://sparql.xyz/facade-x/ns/>
+PREFIX xyz: <http://sparql.xyz/facade-x/data/>
+
+SELECT ?name ?port ?category
+WHERE {
+  SERVICE <x-sparql-anything:location=/data/rml/services.csv,csv.headers=true> {
+    ?row xyz:name ?name ; xyz:port ?port ; xyz:category ?category .
+  }
+}
+ORDER BY ?name

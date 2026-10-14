@@ -1,0 +1,59 @@
+# Skosmos configuration for the stack. Mounted at /var/www/html/config.ttl in the skosmos service.
+# Reference: https://github.com/NatLibFi/Skosmos/wiki/Configuration
+#
+# The vocabulary below is data/sample/semantic-stack-skos.ttl, which scripts/load.sh loads into
+# Fuseki in the graph <http://localhost:8084/graph/semantic-stack> together with the rest of
+# data/sample. Add your own SKOS vocabularies as further skosmos:Vocabulary blocks.
+@prefix void:    <http://rdfs.org/ns/void#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc:      <http://purl.org/dc/terms/> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix skosmos: <http://purl.org/net/skosmos#> .
+@prefix :        <#> .
+
+:config a skosmos:Configuration ;
+    # Container URL: Skosmos runs server-side PHP, so it talks to Fuseki by service name.
+    skosmos:sparqlEndpoint <http://fuseki:3030/ds/sparql> ;
+    # "Generic" = plain SPARQL 1.1, works against any store. Switch to "JenaText" only for a
+    # Fuseki dataset whose jena-text entity map indexes skos:prefLabel/altLabel/hiddenLabel.
+    skosmos:sparqlDialect "Generic" ;
+    skosmos:sparqlCollationEnabled false ;
+    skosmos:sparqlTimeout 20 ;
+    skosmos:httpTimeout 5 ;
+    skosmos:serviceName "semantic-stack vocabularies" ;
+    skosmos:languages (
+        [ rdfs:label "en" ; rdf:value "en_GB.utf8" ]
+    ) ;
+    skosmos:searchResultsSize 20 ;
+    skosmos:transitiveLimit 1000 ;
+    skosmos:rdfListItemsLimit 1000 ;
+    skosmos:logCaughtExceptions false ;
+    skosmos:logBrowserConsole false ;
+    skosmos:templateCache "/tmp/skosmos-template-cache" ;
+    skosmos:customCss "resource/css/stylesheet.css" ;
+    skosmos:feedbackAddress "" ;
+    skosmos:feedbackSender "" ;
+    skosmos:feedbackEnvelopeSender "" ;
+    skosmos:uiLanguageDropdown false ;
+    skosmos:uiHoneypotEnabled true ;
+    skosmos:uiHoneypotTime 5 ;
+    skosmos:globalPlugins () .
+
+# ---- categories shown on the front page -----------------------------------
+:cat_stack a skosmos:Category ;
+    rdfs:label "semantic-stack"@en .
+
+# ---- vocabularies ---------------------------------------------------------
+:stack a skosmos:Vocabulary, void:Dataset ;
+    dc:title "Semantic stack categories"@en ;
+    skosmos:shortName "stack" ;
+    dc:subject :cat_stack ;
+    void:uriSpace "http://localhost:8084/skos/" ;
+    skosmos:language "en" ;
+    skosmos:defaultLanguage "en" ;
+    skosmos:showTopConcepts true ;
+    skosmos:fullAlphabeticalIndex true ;
+    skosmos:mainConceptScheme <http://localhost:8084/skos/categories> ;
+    void:sparqlEndpoint <http://fuseki:3030/ds/sparql> ;
+    skosmos:sparqlGraph <http://localhost:8084/graph/semantic-stack> .
