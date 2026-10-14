@@ -3,7 +3,7 @@
 #
 # Usage: scripts/smoke.sh [check ...]
 #   default checks: landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica
-#   extra checks:   oxigraph ontop fuseki-data (sample data loaded) graphdb
+#   extra checks:   oxigraph oxigraph-data fuseki-data ontop ontop-data trifid-query rdf4j-ui graphdb
 # Env: RETRIES (default 30), SLEEP seconds between retries (default 5), plus the *_PORT variables from .env.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -21,13 +21,15 @@ bad()  { printf '  \033[31mFAIL\033[0m  %-12s %s\n' "$1" "$2"; fail=$((fail+1));
 
 # http NAME URL [expected substring]  - retries until 2xx (after redirects) and body contains substring
 http() {
-  local name="$1" url="$2" want="${3:-}" i body code
+  local name="$1" url="$2" want="${3:-}" i body code jar
+  jar="$(mktemp)"   # cookie jar: the RDF4J Workbench keeps its server selection in a cookie
   for ((i=1; i<=RETRIES; i++)); do
-    body="$(curl -sS -L --max-time 15 -H 'Accept: application/sparql-results+json, text/html;q=0.9, */*;q=0.8' -w '\n%{http_code}' "$url" 2>/dev/null)" || body=$'\n000'
+    body="$(curl -sS -L --max-time 15 -c "$jar" -b "$jar" -H 'Accept: application/sparql-results+json, text/html;q=0.9, */*;q=0.8' -w '\n%{http_code}' "$url" 2>/dev/null)" || body=$'\n000'
     code="${body##*$'\n'}"
-    if [[ "$code" =~ ^2 ]] && { [ -z "$want" ] || grep -q -- "$want" <<<"$body"; }; then ok "$name" "$url"; return 0; fi
+    if [[ "$code" =~ ^2 ]] && { [ -z "$want" ] || grep -q -- "$want" <<<"$body"; }; then ok "$name" "$url"; rm -f "$jar"; return 0; fi
     sleep "$SLEEP"
   done
+  rm -f "$jar"
   bad "$name" "$url (last status $code)"; return 1
 }
 
@@ -47,7 +49,8 @@ for c in "${checks[@]}"; do
     fuseki-data) ask    fuseki-data "$H:${FUSEKI_PORT:-3030}/ds/sparql" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     oxigraph)    sparql oxigraph    "$H:${OXIGRAPH_PORT:-7878}/query" ;;
     oxigraph-data) ask  oxigraph-data "$H:${OXIGRAPH_PORT:-7878}/query" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
-    rdf4j)       http   rdf4j       "$H:${RDF4J_PORT:-8082}/rdf4j-workbench/" ;;
+    rdf4j)       http   rdf4j       "$H:${RDF4J_PORT:-8082}/rdf4j-server/protocol" ;;
+    rdf4j-ui)    http   rdf4j-ui    "$H:${RDF4J_PORT:-8082}/rdf4j-workbench/repositories" ;;
     openrefine)  http   openrefine  "$H:${OPENREFINE_PORT:-3333}/" ;;
     webvowl)     http   webvowl     "$H:${WEBVOWL_PORT:-8083}/serverTimeStamp" ;;
     trifid)      http   trifid      "$H:${TRIFID_PORT:-8084}/sparql/" ;;
