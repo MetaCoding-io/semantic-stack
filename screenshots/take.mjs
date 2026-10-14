@@ -5,7 +5,7 @@
 //   node take.mjs plan <group>          # print the group's compose profiles/services/load/index as JSON
 //   node take.mjs gallery [--out out]   # (re)build out/index.html and out/summary.md from existing PNGs
 //
-// Groups and targets live in targets.json. Each target is awaited until it answers HTTP (< 500),
+// Groups and targets live in targets.json. Each target is awaited until it (or its `probe` URL) answers HTTP (< 500),
 // opened at 1440x900, given `settle` ms to render, then captured. Failures are recorded, not fatal,
 // unless --strict (used for the default group in CI).
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, statSync } from "node:fs";
@@ -63,7 +63,7 @@ for (const groupName of groups) {
     const file = join(dir, `${t.name}.png`);
     const row = { group: groupName, name: t.name, url: t.url, file: `${groupName}/${t.name}.png` };
     process.stdout.write(`${groupName}/${t.name.padEnd(22)} ${t.url}\n`);
-    const up = await waitForHttp(t.url, timeoutS);
+    const up = await waitForHttp(t.probe ?? t.url, timeoutS);   // `probe`: a cookie-less readiness URL when the page itself needs a session
     if (!up.ok) { row.error = `not reachable within ${timeoutS}s (${up.status})`; results.push(row); console.log(`  ✗ ${row.error}`); continue; }
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true });
     const page = await context.newPage();
