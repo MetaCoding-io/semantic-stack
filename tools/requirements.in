@@ -6,4 +6,4 @@ linkml==1.12.1
 pylode==3.6.0
 jupyterlab==4.6.4
 pandas==3.0.6
-kurra>=3.0.5,<3.0.7   # pylode 3.6.0 imports get_missing_labels, removed in kurra 3.0.7
+kurra>=3.1.0,<3.1.1   # pylode 3.6.0 imports get_missing_labels, removed in kurra 3.0.7

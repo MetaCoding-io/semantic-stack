@@ -33,11 +33,9 @@ babel==2.18.0
     # via
     #   jupyterlab-server
     #   sphinx
-backports-zstd==1.8.0
-    # via pystow
 beautifulsoup4==4.15.0
     # via nbconvert
-bleach==6.4.0
+bleach[css]==6.4.0
     # via nbconvert
 certifi==2026.7.22
     # via
@@ -153,7 +151,7 @@ jsonasobj2==1.0.4
     #   linkml-runtime
 jsonpointer==3.2.1
     # via jsonschema
-jsonschema==4.26.0
+jsonschema[format,format-nongpl]==4.26.0
     # via
     #   jupyter-events
     #   jupyterlab-server
@@ -203,7 +201,7 @@ jupyterlab-pygments==0.3.0
     # via nbconvert
 jupyterlab-server==2.28.1
     # via jupyterlab
-kurra==3.0.6
+kurra==3.1.0
     # via
     #   -r requirements.in
     #   pylode
@@ -386,7 +384,7 @@ pyzmq==27.2.0
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
-rdflib==7.6.0
+rdflib[html]==7.6.0
     # via
     #   -r requirements.in
     #   cfgraph
@@ -541,7 +539,6 @@ typing-extensions==4.16.0
     #   pydantic
     #   pydantic-core
     #   pystow
-    #   referencing
     #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.4
