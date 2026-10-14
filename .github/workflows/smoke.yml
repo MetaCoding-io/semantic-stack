@@ -33,6 +33,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Run QLever as the runner's user so it can write ./qlever
+        run: |
+          echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "QLEVER_GID=$(id -g)" >> "$GITHUB_ENV"
       - name: Build local images
         run: docker compose build openrefine webvowl
       - name: Build the QLever index (Olympics demo data)

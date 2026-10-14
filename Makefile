@@ -1,4 +1,7 @@
 COMPOSE ?= docker compose
+# QLever runs as these ids so the index it writes into ./qlever is owned by you (Linux). Override in .env.
+export QLEVER_UID ?= $(shell id -u)
+export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 .PHONY: help up down restart ps logs qlever-index load smoke oxigraph-up fuseki-up tools jupyter-up ontop-up graphdb-up build clean

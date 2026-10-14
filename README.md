@@ -114,6 +114,10 @@ named graph (the script does) rather than the default graph.
 Copy `.env.example` to `.env` to change ports, the Fuseki admin password or the Postgres
 password. Every value has a default inside `compose.yml`, so `.env` is optional.
 
+On Linux, QLever writes its index into `./qlever` as `QLEVER_UID:QLEVER_GID` (default `1000:1000`).
+`make` fills these from `id -u` / `id -g` automatically; when calling `docker compose` directly with
+another uid, set them in `.env`.
+
 `examples/compose.external-network.yml` shows how to attach the stores to a network owned by
 another compose project (for example a monorepo whose services need `http://fuseki:3030`).
 
