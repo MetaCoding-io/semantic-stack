@@ -116,3 +116,15 @@ jobs:
           name: screenshots
           path: screenshots/out
           retention-days: 90
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Docs-ready copies (what scripts/publish-screenshots.py puts in docs/screenshots)
+        run: |
+          python3 -m pip install --quiet "pillow>=10"
+          python3 scripts/publish-screenshots.py screenshots/out docs-screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-docs
+          path: docs-screenshots
+          retention-days: 90

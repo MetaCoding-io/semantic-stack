@@ -309,18 +309,41 @@ another compose project (for example a monorepo whose services need `http://fuse
 
 ## 📸 Screenshots
 
-Every UI in the stack can be captured with a headless Chromium, grouped the same way as the
-profiles (`screenshots/targets.json`):
+A tour of the stack as CI captured it (headless Chromium, real containers, sample data loaded). All 36
+UIs, grouped by profile, are in **[docs/screenshots.md](docs/screenshots.md)**.
+
+<table>
+  <tr>
+    <td><a href="docs/screenshots.md#landing-page"><img src="docs/screenshots/readme/landing.png" alt="Landing page" width="100%"></a><br><sub><b>Landing page</b> · every service, live reachability dots</sub></td>
+    <td><a href="docs/screenshots.md#apache-jena-fuseki"><img src="docs/screenshots/readme/fuseki.png" alt="Fuseki" width="100%"></a><br><sub><b>Fuseki</b> · the default store</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots.md#trifid"><img src="docs/screenshots/readme/trifid-sparql.png" alt="Trifid SPARQL console" width="100%"></a><br><sub><b>Trifid</b> · YASGUI console over Fuseki</sub></td>
+    <td><a href="docs/screenshots.md#trifid"><img src="docs/screenshots/readme/trifid-resource.png" alt="Trifid resource page" width="100%"></a><br><sub><b>Trifid</b> · a dereferenced IRI from the sample data</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots.md#webvowl"><img src="docs/screenshots/readme/webvowl.png" alt="WebVOWL" width="100%"></a><br><sub><b>WebVOWL</b> · ontology visualisation</sub></td>
+    <td><a href="docs/screenshots.md#skosmos"><img src="docs/screenshots/readme/skosmos.png" alt="Skosmos" width="100%"></a><br><sub><b>Skosmos</b> · SKOS vocabulary browser</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots.md#qlever-ui"><img src="docs/screenshots/readme/qlever-ui.png" alt="QLever UI" width="100%"></a><br><sub><b>QLever UI</b> · profile <code>qlever</code></sub></td>
+    <td><a href="docs/screenshots.md#jupyterlab"><img src="docs/screenshots/readme/jupyterlab.png" alt="JupyterLab" width="100%"></a><br><sub><b>JupyterLab</b> · profile <code>jupyter</code></sub></td>
+  </tr>
+</table>
+
+Take your own (`screenshots/targets.json` lists every page, grouped like the profiles):
 
 ```bash
 make up && make load
 make screenshots                         # default group -> screenshots/out/index.html
 make screenshots G="stores apis"         # profile groups (start their profiles first)
+make screenshots-publish                 # shrink screenshots/out into docs/screenshots (needs uv)
 ```
 
 The [screenshots workflow](.github/workflows/screenshots.yml) does the same in CI, weekly and on
-demand: one job per group against the real containers, stitched into a `screenshots` artifact with
-a gallery page. Open the latest run under *Actions > screenshots* and download the artifact.
+demand: one job per group against the real containers. Under *Actions > screenshots* each run keeps two
+artifacts for 90 days: `screenshots` (full-size captures with a gallery page) and `screenshots-docs`
+(shrunk, a drop-in replacement for `docs/screenshots/`).
 
 ---
 
@@ -346,10 +369,14 @@ a gallery page. Open the latest run under *Actions > screenshots* and download t
 │   ├── linkml/semantic-stack.yaml       # same model as a LinkML schema
 │   └── out/                     # generated files (git-ignored)
 │
+├── docs/
+│   ├── screenshots.md           # every UI in pictures, grouped by profile
+│   └── screenshots/             # the images (readme/ holds the crops for the README grid)
 ├── screenshots/                 # headless-browser screenshots: take.mjs, targets.json (make screenshots)
 ├── scripts/
 │   ├── load.sh                  # load data/sample into Fuseki (and Oxigraph when running)
-│   └── smoke.sh                 # every service answers? used by CI and `make smoke`
+│   ├── smoke.sh                 # every service answers? used by CI and `make smoke`
+│   └── publish-screenshots.py   # shrink a screenshots run into docs/screenshots
 │
 ├── landing/index.html           # landing page with live reachability dots
 ├── qlever/Qleverfile            # QLever dataset config for the qlever profile (Olympics demo, port 7001)
@@ -455,8 +482,9 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
       own token, so it does not notice.
 - [ ] **Click through the landing page by hand** after `make up && make load`: CI proves every service
       answers, not that every page looks right.
-- [ ] **Screenshots of the default stack and each profile**: the `screenshots` workflow produces them
-      as an artifact; next step is to review a run and commit the keepers into the README.
+- [x] **Screenshots of the default stack and each profile**: committed under `docs/screenshots/`, with
+      [docs/screenshots.md](docs/screenshots.md) as the tour. Refresh them with `make screenshots-publish`
+      or the `screenshots-docs` artifact of a workflow run.
 
 ---
 

@@ -4,7 +4,7 @@ export QLEVER_UID ?= $(shell id -u)
 export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs load smoke screenshots qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up profile virtuoso-up geosparql-up prez-up grlc-up graph-explorer-up docs-up rpt-up lp-etl-up validation-up observability-up mcp-up graphrag-up ollama-up solid-up build clean
+.PHONY: help up down restart ps logs load smoke screenshots screenshots-publish qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up profile virtuoso-up geosparql-up prez-up grlc-up graph-explorer-up docs-up rpt-up lp-etl-up validation-up observability-up mcp-up graphrag-up ollama-up solid-up build clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -36,6 +36,9 @@ smoke: ## Check that every service answers (add checks: make smoke S="qlever oxi
 screenshots: ## Screenshot every UI with headless Chromium into screenshots/out (G="default stores" for profile groups)
 	cd screenshots && npm install --no-audit --no-fund && npx playwright install chromium && node take.mjs $(or $(G),default) --timeout $(or $(T),60)
 	@echo "Gallery: screenshots/out/index.html"
+
+screenshots-publish: ## Shrink a screenshots run into docs/screenshots, the gallery committed to git (needs uv; SRC=path to a downloaded artifact)
+	uv run scripts/publish-screenshots.py $(or $(SRC),screenshots/out) docs/screenshots
 
 qlever-index: ## Download the Olympics demo data and build the QLever index (one-time, or after editing qlever/Qleverfile)
 	$(COMPOSE) --profile qlever-index run --rm qlever-index
