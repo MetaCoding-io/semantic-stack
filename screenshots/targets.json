@@ -1,5 +1,5 @@
 {
-  "_comment": "Groups of screenshot targets. `profiles` are compose profiles to enable, `services` the ones to start ('' = all in those profiles), `load` posts data/sample first, `index` builds the QLever index first. Each target: name, url, optional `settle` (ms to wait after load), `waitFor` (CSS selector), `clip` (viewport only instead of full page), `probe` (readiness URL to poll instead of `url`, for pages that need a browser session). The CI matrix in .github/workflows/screenshots.yml mirrors the group names.",
+  "_comment": "Groups of screenshot targets. `profiles` are compose profiles to enable, `services` the ones to start ('' = all in those profiles), `load` posts data/sample first, `index` builds the QLever index first. Each target: name, url, optional `settle` (ms to wait after load), `waitFor` (CSS selector), `clip` (viewport only instead of full page), `probe` (readiness URL to poll instead of `url`, for pages that need a browser session), `auth` ({user, pass} HTTP basic credentials). The CI matrix in .github/workflows/screenshots.yml mirrors the group names.",
   "groups": {
     "default": {
       "profiles": [],
@@ -7,7 +7,7 @@
       "load": true,
       "targets": [
         { "name": "landing",               "url": "http://localhost:8080/", "settle": 6000 },
-        { "name": "fuseki",                "url": "http://localhost:3030/#/dataset/ds/query", "settle": 2000 },
+        { "name": "fuseki",                "url": "http://localhost:3030/#/dataset/ds/query", "settle": 2000, "auth": { "user": "admin", "pass": "admin" } },
         { "name": "trifid-home",           "url": "http://localhost:8084/" },
         { "name": "trifid-resource",       "url": "http://localhost:8084/service/fuseki", "settle": 2000 },
         { "name": "trifid-sparql",         "url": "http://localhost:8084/sparql/", "settle": 3000 },
@@ -36,7 +36,7 @@
         { "name": "graphdb",           "url": "http://localhost:7200/", "settle": 6000 },
         { "name": "virtuoso-sparql",   "url": "http://localhost:8890/sparql" },
         { "name": "virtuoso-conductor","url": "http://localhost:8890/conductor/", "settle": 2000 },
-        { "name": "fuseki-geosparql",  "url": "http://localhost:3031/#/dataset/ds/query", "settle": 2000 }
+        { "name": "fuseki-geosparql",  "url": "http://localhost:3031/#/dataset/ds/query", "settle": 2000, "auth": { "user": "admin", "pass": "admin" } }
       ]
     },
     "apis": {

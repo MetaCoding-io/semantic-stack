@@ -65,7 +65,11 @@ for (const groupName of groups) {
     process.stdout.write(`${groupName}/${t.name.padEnd(22)} ${t.url}\n`);
     const up = await waitForHttp(t.probe ?? t.url, timeoutS);   // `probe`: a cookie-less readiness URL when the page itself needs a session
     if (!up.ok) { row.error = `not reachable within ${timeoutS}s (${up.status})`; results.push(row); console.log(`  ✗ ${row.error}`); continue; }
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ignoreHTTPSErrors: true });
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      ignoreHTTPSErrors: true,
+      ...(t.auth ? { httpCredentials: { username: t.auth.user, password: t.auth.pass } } : {}),   // basic auth, e.g. Fuseki's admin UI
+    });
     const page = await context.newPage();
     try {
       await page.goto(t.url, { waitUntil: "domcontentloaded", timeout: 60000 });

@@ -24,6 +24,9 @@ with open(path, "w") as f:
     yaml.safe_dump(cfg, f, sort_keys=False)
 PY
 python manage.py config "$SLUG" "$CFG" --hide-all-other-backends
+# `config` writes with a bulk update() that bypasses Backend.save(), so the backends shipped in the
+# image (Wikidata first) keep isDefault=True and the root URL would still open Wikidata. Clear them.
+python manage.py shell -c "from backend.models import Backend; Backend.objects.exclude(slug='$SLUG').update(isDefault=False, isNoSlugMode=False); b = Backend.objects.get(slug='$SLUG'); b.isDefault = True; b.save(); print('default backend:', b.name)"
 echo "QLever UI: backend '$SLUG' -> $URL"
 
 exec gunicorn --bind :7000 --workers 3 --limit-request-line 10000 qlever.wsgi:application
