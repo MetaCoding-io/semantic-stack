@@ -1,0 +1,104 @@
+# Brings the stack up for real and checks that every service answers.
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"   # weekly: catches upstream drift in the few images that have no version tags
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  config:
+    name: compose config + shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every compose combination with all profiles
+        run: |
+          docker compose --profile '*' -f compose.yml config -q
+          docker compose --profile '*' -f compose.yml -f compose.oxigraph.yml config -q
+          docker compose --profile '*' -f compose.yml -f compose.fuseki.yml config -q
+          docker compose --profile '*' -f compose.yml -f examples/compose.external-network.yml config -q
+      - name: shellcheck
+        run: shellcheck scripts/*.sh qlever-ui/*.sh
+
+  default-stack:
+    name: default stack (QLever primary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build local images
+        run: docker compose build openrefine webvowl
+      - name: Build the QLever index (Olympics demo data)
+        run: docker compose --profile setup run --rm qlever-index
+      - name: Start the stack
+        run: docker compose up -d --wait --wait-timeout 420
+      - name: Load sample data
+        run: ./scripts/load.sh
+      - name: Smoke test
+        run: ./scripts/smoke.sh landing qlever qlever-ui fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --tail 150
+
+  oxigraph-stack:
+    name: oxigraph variant
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the Oxigraph variant (image-only services)
+        run: docker compose -f compose.yml -f compose.oxigraph.yml up -d --wait --wait-timeout 300 landing oxigraph fuseki trifid comunica blueprint
+      - name: Load sample data into Fuseki and Oxigraph
+        run: ./scripts/load.sh
+      - name: Smoke test
+        run: ./scripts/smoke.sh landing oxigraph oxigraph-data fuseki fuseki-data trifid trifid-query blueprint comunica
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f compose.yml -f compose.oxigraph.yml logs --tail 150
+
+  ontop-stack:
+    name: ontop profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Postgres + Ontop
+        run: docker compose --profile ontop up -d --build --wait --wait-timeout 300 postgres ontop
+      - name: Smoke test
+        run: ./scripts/smoke.sh ontop ontop-data
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --profile ontop logs --tail 150
+
+  tools-image:
+    name: tools image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker compose --profile tools build tools
+      - name: pySHACL validates the sample data
+        run: docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
+      - name: LinkML generators run
+        run: |
+          docker compose --profile tools run --rm tools gen-owl linkml/semantic-stack.yaml > /dev/null
+          docker compose --profile tools run --rm tools gen-shacl linkml/semantic-stack.yaml > /dev/null
+          docker compose --profile tools run --rm tools gen-json-schema linkml/semantic-stack.yaml > /dev/null
+      - name: pyLODE documents the vocabulary
+        run: docker compose --profile tools run --rm tools pylode sample/semantic-stack-vocab.ttl -o out/vocab.html
+      - name: RML pipeline
+        run: |
+          docker compose --profile tools run --rm yarrrml -i /data/rml/mapping.yarrrml.yml -o /data/rml/mapping.rml.ttl
+          docker compose --profile tools run --rm rmlmapper -m /data/rml/mapping.rml.ttl -o /data/rml/output.ttl -s turtle
+          docker compose --profile tools run --rm tools python -c "from rdflib import Graph; g=Graph().parse('rml/output.ttl'); assert len(g) > 10, len(g); print(len(g), 'triples')"

@@ -1,0 +1,20 @@
+# YARRRML mapping: data/rml/services.csv -> RDF using the sample vocabulary.
+# Paths are absolute container paths because both tools mount ./data at /data.
+prefixes:
+  ss: http://localhost:8084/vocab/
+  svc: http://localhost:8084/service/
+  cat: http://localhost:8084/category/
+  schema: http://schema.org/
+  xsd: http://www.w3.org/2001/XMLSchema#
+
+mappings:
+  service:
+    sources:
+      - ['/data/rml/services.csv~csv']
+    s: svc:$(slug)
+    po:
+      - [a, ss:Service]
+      - [schema:name, $(name)]
+      - [ss:port, $(port), xsd:integer]
+      - [ss:language, $(language)]
+      - [ss:category, cat:$(category)~iri]

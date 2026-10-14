@@ -1,0 +1,6 @@
+slug,name,port,category,language
+qlever,QLever,7001,triple-store,C++
+fuseki,Apache Jena Fuseki,3030,triple-store,Java
+oxigraph,Oxigraph,7878,triple-store,Rust
+trifid,Trifid,8084,visualisation,JavaScript
+comunica,Comunica,8087,query,TypeScript

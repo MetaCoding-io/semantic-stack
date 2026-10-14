@@ -1,0 +1,12 @@
+# Sample data: the dependency graph between services, as a CONSTRUCT you can paste into Graph Explorer.
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+CONSTRUCT {
+  ?a ss:dependsOn ?b .
+  ?a schema:name ?an .
+  ?b schema:name ?bn .
+} WHERE {
+  ?a ss:dependsOn ?b ; schema:name ?an .
+  ?b schema:name ?bn .
+}

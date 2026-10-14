@@ -1,0 +1,16 @@
+# Olympics demo (QLever): the ten tallest medal-winning athletes and what they won.
+PREFIX olympics: <http://wallscope.co.uk/ontology/olympics/>
+PREFIX dbo:      <http://dbpedia.org/ontology/>
+PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?name ?height ?event ?games WHERE {
+  ?result olympics:athlete ?athlete ;
+          olympics:medal ?medal ;
+          olympics:event ?e ;
+          olympics:games ?g .
+  ?athlete rdfs:label ?name ; dbo:height ?height .
+  ?e rdfs:label ?event .
+  ?g rdfs:label ?games .
+}
+ORDER BY DESC(?height)
+LIMIT 10
