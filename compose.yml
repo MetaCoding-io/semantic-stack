@@ -159,6 +159,10 @@ services:
   # ---------------------------------------------------------------- repository management
   # RDF4J Server + Workbench. Add your stores under Repositories > New > "SPARQL endpoint proxy"
   # using container URLs such as http://qlever:7001 or http://fuseki:3030/ds/sparql.
+  # Open it through the landing page (or the README link): the Workbench runs inside the container and
+  # resolves its server from the browser's host header, so http://localhost:8082/rdf4j-workbench/ makes
+  # it dial localhost:8082 *inside* the container and fail. The link passes
+  # ?workbench-server=http://localhost:8080/rdf4j-server once; the choice is kept in a cookie.
   rdf4j:
     image: eclipse/rdf4j-workbench:6.1.0-tomcat
     <<: *restart

@@ -56,7 +56,7 @@
       <p>Knowledge-graph browser. Needs a Blueprint configuration graph in the store before it shows anything.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8083/serverTimeStamp"></span><a href="http://localhost:8083/">WebVOWL</a></h3>
       <p>OWL ontology visualisation with the OWL2VOWL converter. Try <a href="http://localhost:8083/#iri=http://xmlns.com/foaf/0.1/">FOAF</a>, or upload <code>data/sample/semantic-stack-vocab.ttl</code>.</p></div>
-    <div class="card"><h3><span class="dot" data-probe="http://localhost:8082/rdf4j-workbench/"></span><a href="http://localhost:8082/rdf4j-workbench/">RDF4J Workbench</a></h3>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8082/rdf4j-workbench/"></span><a href="http://localhost:8082/rdf4j-workbench/NONE/server?workbench-server=http://localhost:8080/rdf4j-server">RDF4J Workbench</a></h3>
       <p>Repository manager. Add a "SPARQL endpoint proxy" repository pointing at <code>http://qlever:7001</code> or <code>http://fuseki:3030/ds/sparql</code>.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8087/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8087/sparql?query=SELECT%20(COUNT(*)%20AS%20%3Fn)%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D">Comunica</a></h3>
       <p>Federated SPARQL endpoint at <code>/sparql</code>. Add QLever or Oxigraph to its sources with <code>COMUNICA_SOURCES</code> in <code>.env</code>.</p></div>

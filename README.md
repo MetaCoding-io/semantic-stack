@@ -197,7 +197,7 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **sparql-proxy** | <http://localhost:8090/sparql> | Caching, job-queueing, update-rejecting proxy over Fuseki; dashboard at `/admin` (`admin` / `admin`). The endpoint to hand to browser tools and read-only users. |
 | **Sparklis** | <http://localhost:8092> | Visual query builder: compose SPARQL by clicking through the data in plain English. The landing page opens it on sparql-proxy. |
 | **QLever UI** | <http://localhost:7000> | Profile `qlever`. Query editor with autocompletion, preconfigured for the QLever above. |
-| **RDF4J Workbench** | <http://localhost:8082/rdf4j-workbench/> | Repository manager; add any store as a "SPARQL endpoint proxy". |
+| **RDF4J Workbench** | <http://localhost:8082/rdf4j-workbench/NONE/server?workbench-server=http://localhost:8080/rdf4j-server> | Repository manager; add any store as a "SPARQL endpoint proxy". The link sets the Workbench's server to the container-internal URL once (cookie); opening `/rdf4j-workbench/` directly makes it look for the server on the host port and fail. |
 | **Ontop** | <http://localhost:8089/sparql> | Profile `ontop`. SPARQL over a relational database. |
 
 ### 🧭 Browse and visualise
