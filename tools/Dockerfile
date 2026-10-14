@@ -2,7 +2,7 @@
 #   docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
 #   docker compose --profile tools run --rm tools gen-owl linkml/semantic-stack.yaml
 #   docker compose --profile tools run --rm tools pylode sample/semantic-stack-vocab.ttl -o out/vocab.html
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.title="semantic-stack tools" \
       org.opencontainers.image.source="https://github.com/MetaCoding-io/semantic-stack"
