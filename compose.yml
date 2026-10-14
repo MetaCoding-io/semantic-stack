@@ -33,7 +33,7 @@ x-qlever: &qlever
 services:
   # ---------------------------------------------------------------- landing page
   landing:
-    image: nginx:1.29-alpine
+    image: nginx:1.31-alpine
     <<: *restart
     volumes:
       - ./landing:/usr/share/nginx/html:ro
@@ -264,14 +264,17 @@ services:
   # data/sample. SPARQL at http://localhost:8089/sparql, portal UI at http://localhost:8089/.
   postgres:
     profiles: [ontop]
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     <<: *restart
     environment:
       POSTGRES_USER: stack
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stack}
       POSTGRES_DB: stack
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Postgres 18+ keeps data under /var/lib/postgresql/<major>/docker and must be mounted at
+      # /var/lib/postgresql (not .../data). Had the demo running on 17? Wipe it first:
+      #   docker compose --profile ontop down -v
+      - postgres_data:/var/lib/postgresql
       - ./ontop/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U stack -d stack"]
