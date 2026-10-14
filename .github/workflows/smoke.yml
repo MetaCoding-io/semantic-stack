@@ -18,7 +18,7 @@ jobs:
     name: compose config + shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate every compose combination with all profiles
         run: |
           docker compose --profile '*' -f compose.yml config -q
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run QLever as the runner's user so it can write ./qlever
         run: |
           echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Start the Oxigraph variant (image-only services)
         run: docker compose -f compose.yml -f compose.oxigraph.yml up -d --wait --wait-timeout 300 landing oxigraph fuseki trifid comunica blueprint
       - name: Load sample data into Fuseki and Oxigraph
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Start Postgres + Ontop
         run: docker compose --profile ontop up -d --build --wait --wait-timeout 300 postgres ontop
       - name: Smoke test
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: docker compose --profile tools build tools
       - name: pySHACL validates the sample data
