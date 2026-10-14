@@ -14,7 +14,7 @@
         { "name": "trifid-graph-explorer", "url": "http://localhost:8084/graph-explorer/?resource=http://localhost:8084/service/fuseki", "settle": 5000 },
         { "name": "blueprint",             "url": "http://localhost:8085/", "settle": 4000 },
         { "name": "webvowl",               "url": "http://localhost:8083/#foaf", "settle": 6000, "clip": true },
-        { "name": "rdf4j-workbench",       "url": "http://localhost:8082/rdf4j-workbench/NONE/server?workbench-server=http://localhost:8080/rdf4j-server", "probe": "http://localhost:8082/rdf4j-server/protocol", "settle": 2000 },
+        { "name": "rdf4j-workbench",       "url": "http://localhost:8082/rdf4j-workbench/repositories/NONE/server?workbench-server=http://localhost:8080/rdf4j-server", "probe": "http://localhost:8082/rdf4j-server/protocol", "settle": 2000 },
         { "name": "openrefine",            "url": "http://localhost:3333/", "settle": 3000 },
         { "name": "sparql-proxy",          "url": "http://localhost:8090/", "settle": 2000 },
         { "name": "sparklis",              "url": "http://localhost:8092/?title=semantic-stack&endpoint=http%3A%2F%2Flocalhost%3A8090%2Fsparql", "settle": 6000 },
