@@ -9,6 +9,9 @@ updates:
     groups:
       compose-images:
         patterns: ["*"]
+    ignore:
+      # Built by this repo and published by publish-images.yml; nothing to bump.
+      - dependency-name: "*semantic-stack-*"
 
   - package-ecosystem: docker
     directories:
@@ -20,6 +23,10 @@ updates:
       - /shacl-play
     schedule:
       interval: weekly
+    ignore:
+      # A Python bump needs tools/requirements.txt re-resolved for that version (see tools/requirements.in);
+      # do it by hand, Dependabot cannot.
+      - dependency-name: python
 
   - package-ecosystem: pip
     directory: /tools
@@ -28,6 +35,11 @@ updates:
     groups:
       python-tools:
         patterns: ["*"]
+    ignore:
+      # pylode 3.6.0 imports a function kurra removed in 3.0.7 (constraint lives in requirements.in,
+      # which Dependabot does not read). Drop this once pylode supports kurra >= 3.0.7.
+      - dependency-name: kurra
+        versions: [">=3.0.7"]
 
   - package-ecosystem: github-actions
     directory: /
