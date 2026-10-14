@@ -91,9 +91,43 @@ docker compose --profile <name> up -d        # or: make <name>-up
 | 🧰 `tools` | `make tools` | Shell in the **Python toolbox** (rdflib, pySHACL, OWL-RL, SPARQLWrapper, LinkML, pyLODE, pandas, jelly-cli) plus the **RMLMapper**, **YARRRML**, **SDM-RDFizer**, **rudof** and **EYE** CLIs, `./data` mounted at `/data` | You want to validate, convert, reason, model or script |
 | 📓 `jupyter` | `make jupyter-up` | **JupyterLab** with the same toolbox and `notebooks/01-hello-stack.ipynb` | You prefer notebooks |
 | 🪞 `ontop` | `make ontop-up` | **Postgres** (seeded demo tables) + **Ontop** virtual knowledge graph: SPARQL over SQL, nothing copied | You have relational data and want it as RDF without an ETL |
+| 🐘 `virtuoso` | `make virtuoso-up` | **OpenLink Virtuoso Open Source** on <http://localhost:8890> (SPARQL at `/sparql`, Conductor at `/conductor`, `dba`/`dba`); `make load` fills it | Your clients run Virtuoso (DBpedia, most of the LOD cloud) |
+| 🌍 `geosparql` | `make geosparql-up` | **Fuseki + GeoSPARQL** (Zazuko build, Jena 6.2) on <http://localhost:3031>; `make load` fills it, `data/queries/40-geosparql-nearby.rq` uses the WKT sample | You have geometries and want `geof:` functions and a spatial index |
+| 🔗 `prez` | `make prez-up` | **Prez** Linked Data API on <http://localhost:8000> (OpenAPI at `/docs`, `/object?uri=…`) + **Prez UI** on <http://localhost:8001> | You want a profile-driven, content-negotiating API over the store |
+| 🧾 `grlc` | `make grlc-up` | **grlc** on <http://localhost:8088/api-local/>: every `.rq` in `grlc/queries` becomes a documented REST route | You want REST endpoints for people who will never write SPARQL |
+| 🕸️ `graph-explorer` | `make graph-explorer-up` | **AWS Graph Explorer** on <http://localhost:8095/explorer>, click-to-expand instance graph | You want to show a graph to someone, not a result table |
+| 📄 `docs` | `make docs-up` | **pyLODE server** on <http://localhost:8096>: ontology documentation by URL | You want docs for an ontology without the CLI |
+| 🧮 `rpt` | `make rpt-up` | **RDF Processing Toolkit** server on <http://localhost:8642>: YASGUI, GraphQL and a Linked Data viewer over Fuseki | You want GraphQL over SPARQL, or RPT's SPARQL-sequence pipelines |
+| 🪈 `lp-etl` | `make lp-etl-up` | **LinkedPipes ETL** on <http://localhost:9080>, four containers | You want to draw ETL pipelines instead of scripting them |
+| ✅ `validation` | `make validation-up` | **ITB SHACL validator** on <http://localhost:8097/shacl/stack/upload>: web form, REST and SOAP over `data/sample/shapes.ttl` | You need validation as a service for other teams or systems |
+| 📈 `observability` | `make observability-up` | **Prometheus** (<http://localhost:9091>) + **sparql-prometheus-exporter** (SPARQL counts as gauges) + **Grafana** (<http://localhost:3000>, SPARQL datasource provisioned) | You want dashboards over the data or the stores |
+| 🤖 `mcp` | `make mcp-up` | **sparql-mcp** (SPARQL 1.1 + Graph Store over Fuseki, SSE on :8103), **rudof-mcp** (ShEx/SHACL/SPARQL, :8102), **open-ontologies** (ontology engineering, :8101) | You want Claude Code or another agent to work with the stack, see below |
+| 🧠 `graphrag` | `make graphrag-up` | **Flexible GraphRAG** + **Qdrant**: LLM knowledge-graph extraction into Fuseki, hybrid search, chat UI (<http://localhost:8105>) and MCP (:3001); needs `ANTHROPIC_API_KEY` or the `ollama` profile | You want to try GraphRAG over RDF with your own documents |
+| 🦙 `ollama` | `make ollama-up` | **Ollama** on <http://localhost:11434>, local models with an OpenAI-compatible API | You want the `graphrag` profile without an API key |
+| 🟣 `solid` | `make solid-up` | **Community Solid Server** on <http://localhost:8100>: a Solid Pod / LDP server | You develop Solid apps or need an LDP server |
 
-Profiles combine freely (`docker compose --profile qlever --profile oxigraph up -d`). Put
-`COMPOSE_PROFILES=qlever,oxigraph` in `.env` to make them part of your default `make up`.
+Profiles combine freely (`docker compose --profile qlever --profile oxigraph up -d`, or
+`make profile P=<name>`). Put `COMPOSE_PROFILES=qlever,oxigraph` in `.env` to make them part of your
+default `make up`. The last nine profiles come from the [October 2026 tool survey](reports/); every
+profile has its own smoke job in CI.
+
+<details>
+<summary>Hooking the MCP servers up to Claude Code</summary>
+
+```bash
+make mcp-up
+claude mcp add --transport sse  sparql          http://localhost:8103/sse    # SELECT/ASK/CONSTRUCT, Update, Graph Store, SHACL over Fuseki
+claude mcp add --transport http rudof           http://localhost:8102/mcp    # load RDF (files or endpoints), SPARQL, ShEx/SHACL validation
+claude mcp add --transport http open-ontologies http://localhost:8101/mcp    # ontology editing with reasoning and change certificates
+# read-only agent: point sparql-mcp at the proxy instead of Fuseki
+#   SPARQL_MCP_QUERY_URL=http://sparql-proxy:3000/sparql in .env (updates are then rejected)
+```
+
+Two more worth knowing that are not containers here: `claude mcp add qlever -- npx -y mcp-server-qlever@0.3.0 -e http://localhost:7001`
+(QLever-aware tools, stdio) and `claude mcp add --transport http wikidata https://wd-mcp.wmcloud.org/mcp`
+(Wikimedia Deutschland's hosted Wikidata MCP).
+
+</details>
 
 <details>
 <summary>Pointing Trifid, Blueprint, Comunica or sparql-proxy at another store</summary>
@@ -120,7 +154,10 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | Tool | Talks to | How to change it |
 |---|---|---|
 | Trifid, Blueprint, Comunica, sparql-proxy | Fuseki | the `.env` variables above |
-| Sparklis | sparql-proxy | browser app; the landing-page link passes `?endpoint=`, so any CORS-enabled endpoint works |
+| Sparklis, Sparnatural | sparql-proxy | browser apps; Sparklis takes `?endpoint=`, Sparnatural's is the `endpoint` attribute in `sparnatural/index.html` |
+| Prez, grlc, RPT, Graph Explorer, sparql-mcp, Grafana's SPARQL datasource | Fuseki | `PREZ_SPARQL_ENDPOINT`, `GRLC_SPARQL_ENDPOINT`, `RPT_SPARQL_ENDPOINT`, `GRAPH_EXPLORER_CONNECTION_URL`, `SPARQL_MCP_*_URL` in `.env`; Grafana in `grafana/provisioning/` |
+| Virtuoso, Fuseki + GeoSPARQL | themselves | separate stores; `scripts/load.sh` fills both when they run |
+| Flexible GraphRAG | Fuseki, its own dataset `flexible-graphrag` | created through Fuseki's admin API; plus Qdrant for vectors |
 | Skosmos | Fuseki `ds` | `skosmos/config.ttl` (`skosmos:sparqlEndpoint`); `Generic` dialect works on Oxigraph, GraphDB or QLever too |
 | RDF4J Workbench | any | add a "SPARQL endpoint proxy" repository by container URL |
 | SHACL Play, pySHACL service | none (uploads) | SHACL Play's *Generate* page can read any endpoint by container URL |
@@ -141,6 +178,9 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **QLever** | <http://localhost:7001> | Profile `qlever`. Very fast engine for large, read-mostly graphs; indexed once. API only, use the QLever UI. |
 | **Oxigraph** | <http://localhost:7878> | Profile `oxigraph`. Rust, zero setup, built-in YASGUI. |
 | **GraphDB** | <http://localhost:7200> | Profile `graphdb`. Ontotext GraphDB Free. |
+| **Virtuoso** | <http://localhost:8890/sparql> | Profile `virtuoso`. OpenLink Virtuoso Open Source 7.2; Conductor at `/conductor` (`dba` / `dba`), isql on 1111. GPL-2.0. |
+| **Fuseki + GeoSPARQL** | <http://localhost:3031/ds/sparql> | Profile `geosparql`. Fuseki-main with Jena GeoSPARQL and Apache SIS; same Jena as the main Fuseki, no admin UI. |
+| **Community Solid Server** | <http://localhost:8100> | Profile `solid`. Solid Pod / LDP server, not a SPARQL store. |
 
 ### 🔍 Query and federate
 
@@ -148,6 +188,10 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 |---|---|---|
 | **Trifid SPARQL console** | <http://localhost:8084/sparql> | YASGUI against Fuseki, via Trifid's CORS-friendly `/query` proxy. |
 | **Comunica** | <http://localhost:8087/sparql> | One federated SPARQL endpoint; Fuseki by default, add other stores with `COMUNICA_SOURCES`. |
+| **Sparnatural** | <http://localhost:8094> | SHACL-configured visual query builder (`sparnatural/config.ttl` describes the sample data); queries go through sparql-proxy. |
+| **grlc** | <http://localhost:8088/api-local/> | Profile `grlc`. Swagger REST API generated from `grlc/queries/*.rq`. |
+| **RPT** | <http://localhost:8642/sparql> | Profile `rpt`. YASGUI, GraphQL (`/graphql`) and a Linked Data viewer over Fuseki. |
+| **Prez** | <http://localhost:8000/docs> | Profile `prez`. Linked Data API with profiles, search and `/object?uri=`; UI on <http://localhost:8001>. |
 | **sparql-proxy** | <http://localhost:8090/sparql> | Caching, job-queueing, update-rejecting proxy over Fuseki; dashboard at `/admin` (`admin` / `admin`). The endpoint to hand to browser tools and read-only users. |
 | **Sparklis** | <http://localhost:8092> | Visual query builder: compose SPARQL by clicking through the data in plain English. The landing page opens it on sparql-proxy. |
 | **QLever UI** | <http://localhost:7000> | Profile `qlever`. Query editor with autocompletion, preconfigured for the QLever above. |
@@ -163,6 +207,7 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **Blueprint** | <http://localhost:8085> | Knowledge graph browser (needs a Blueprint configuration graph, see limitations). |
 | **WebVOWL** | <http://localhost:8083> | OWL ontology visualisation with the OWL2VOWL converter. Try `data/sample/semantic-stack-vocab.ttl`. |
 | **Skosmos** | <http://localhost:9090> | SKOS vocabulary browser and REST API over Fuseki. Shows `data/sample/semantic-stack-skos.ttl` after `make load`; add your own vocabularies in `skosmos/config.ttl`. |
+| **Graph Explorer** | <http://localhost:8095/explorer> | Profile `graph-explorer`. AWS Graph Explorer: expand nodes and edges interactively; the container queries Fuseki through its own proxy. |
 
 ### 🔄 Transform and map
 
@@ -173,6 +218,9 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **YARRRML parser** | `docker compose --profile tools run --rm yarrrml …` | Human-friendly YAML → RML. Walkthrough in [data/rml/README.md](data/rml/README.md). |
 | **SDM-RDFizer** | `docker compose --profile tools run --rm sdm-rdfizer` | Second RML engine (100 % on every module of the new RML spec in the 2026 KGCW challenge); runs the same mapping via `data/rml/sdm-rdfizer.ini`. |
 | **SPARQL Anything** | <http://localhost:8093/sparql> | Query CSV, JSON, XML, HTML, spreadsheets, … as RDF with no mapping (Facade-X). Endpoint `/sparql.anything`; try `data/queries/30-sparql-anything-csv.rq`. |
+| **RPT CLI** | `docker compose --profile tools run --rm rpt-cli rmltk rml to sparql rml/mapping.rml.ttl` | RML → SPARQL CONSTRUCT, SPARQL-sequence pipelines, `integrate <data> <query.rq>`. |
+| **LinkedPipes ETL** | <http://localhost:9080> | Profile `lp-etl`. Visual pipelines: download, SPARQL transform, SHACL, upload to a SPARQL endpoint. |
+| **Flexible GraphRAG** | <http://localhost:8105> | Profile `graphrag`. Documents → LLM-extracted knowledge graph in Fuseki + Qdrant, hybrid search, chat, MCP. |
 | **Ontop** | profile `ontop` | Keep the data in SQL, query it as RDF. |
 
 ### 🧪 Validate, model, document
@@ -184,6 +232,12 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | **rudof** | `… rudof shacl-validate --shapes sample/shapes.ttl sample/semantic-stack.ttl` | ShEx + SHACL + DCTAP validation and conversion in one binary. `make validate` runs pySHACL and rudof. |
 | **EYE** | `… eye --quiet --nope n3/socrates.n3 --pass` | Notation3 reasoner; `data/n3/socrates.n3` is the classic example. |
 | **jelly-cli** | `… tools sh -c 'jelly-cli rdf to-jelly sample/semantic-stack.ttl > out/semantic-stack.jelly'` | Jelly binary RDF streaming, readable by Jena, RDF4J, Morph-KGC and TopQuadrant SHACL. |
+| **ROBOT** | `… robot reason --reasoner ELK --input sample/semantic-stack-vocab.ttl --output out/vocab-reasoned.ttl` | OBO Foundry OWL toolkit: reason, `report` (QC), convert, merge, extract. |
+| **Nemo** | `… nemo -D out -o nemo/dependencies.rls` | Datalog rule engine over RDF files and SPARQL endpoints; `data/nemo/dependencies.rls` derives the transitive dependency closure. |
+| **WIDOCO** | `… widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en` | Wizard-style ontology documentation with an embedded WebVOWL view; browse the output at <http://localhost:8080/data/out/widoco/>. |
+| **pyLODE server** | <http://localhost:8096> | Profile `docs`. `GET /pylode?url=…` renders any ontology reachable by URL; the landing page serves `./data` at `http://landing/data/…` for that. |
+| **ITB SHACL validator** | <http://localhost:8097/shacl/stack/upload> | Profile `validation`. Web form, REST (`POST /shacl/stack/api/validate`) and SOAP; domains live in `itb/`. |
+| **Grafana + Prometheus** | <http://localhost:3000> | Profile `observability`. SPARQL datasource over Fuseki; `prometheus/sparql-exporter.yml` turns SPARQL counts into metrics. |
 | **LinkML** | `… tools gen-owl linkml/semantic-stack.yaml` | One YAML model → OWL, SHACL, JSON Schema, Pydantic (`gen-owl`, `gen-shacl`, `gen-json-schema`, `gen-pydantic`). |
 | **pyLODE** | `… tools pylode sample/semantic-stack-vocab.ttl -o out/vocab.html` | HTML documentation for an ontology. |
 | **Jena CLI** | `docker compose exec fuseki /jena/bin/riot --validate /data/sample/semantic-stack.ttl` | `riot`, `sparql`, `shacl` and friends ship inside the Fuseki image. |
@@ -204,6 +258,9 @@ RDF 1.2 and SPARQL 1.2.
 | Comunica | `http://comunica:8080/sparql` | `http://localhost:8087/sparql` | no |
 | Trifid proxy | `http://trifid:8080/query` | `http://localhost:8084/query` | no |
 | sparql-proxy | `http://sparql-proxy:3000/sparql` | `http://localhost:8090/sparql` | rejected by design |
+| Virtuoso (profile) | `http://virtuoso:8890/sparql` | `http://localhost:8890/sparql` | `/sparql-graph-crud-auth` (digest auth `dba`) |
+| Fuseki + GeoSPARQL (profile) | `http://fuseki-geosparql:3030/ds/sparql` | `http://localhost:3031/ds/sparql` | `/ds/update`, `/ds/data` |
+| RPT (profile) | `http://rpt:8642/sparql` | `http://localhost:8642/sparql` | no (proxy) |
 | SPARQL Anything | `http://sparql-anything:3000/sparql.anything` | `http://localhost:8093/sparql.anything` | no (files) |
 | Ontop | `http://ontop:8080/sparql` | `http://localhost:8089/sparql` | no (virtual) |
 
@@ -218,7 +275,7 @@ RDF 1.2 and SPARQL 1.2.
 
 | Where | How |
 |---|---|
-| **Fuseki** (and Oxigraph when up) | `./scripts/load.sh my-file.ttl` posts to a named graph over the Graph Store Protocol. Or use the Fuseki UI (upload), `/ds/update`, or Oxigraph's YASGUI. |
+| **Fuseki** (and Oxigraph, Virtuoso, Fuseki + GeoSPARQL when up) | `./scripts/load.sh my-file.ttl` posts to a named graph over the Graph Store Protocol of every running store. Or use the Fuseki UI (upload), `/ds/update`, or Oxigraph's YASGUI. |
 | **QLever** | Copy your `.ttl`/`.nt` into `./qlever/`, edit `qlever/Qleverfile` (`NAME`, `INPUT_FILES`, drop `GET_DATA_CMD`), then `make qlever-index` and `docker compose --profile qlever restart qlever qlever-ui`. |
 | **From CSV/JSON/XML** | Write a YARRRML mapping, run `yarrrml` then `rmlmapper` ([data/rml/README.md](data/rml/README.md)), load the output. |
 | **From a SQL database** | Point the `ontop` profile at it: edit `ontop/input/mapping.obda` and the `ONTOP_DB_*` variables. Nothing gets copied. |
@@ -261,10 +318,12 @@ another compose project (for example a monorepo whose services need `http://fuse
 │   │   ├── semantic-stack.ttl           # demo dataset: the stack describing itself
 │   │   ├── semantic-stack-vocab.ttl     # its vocabulary (WebVOWL, pyLODE, Ontop ontology)
 │   │   ├── semantic-stack-skos.ttl      # the tool categories as a SKOS thesaurus (Skosmos)
+│   │   ├── semantic-stack-geo.ttl       # WKT points for the organisations (geosparql profile)
 │   │   └── shapes.ttl                   # SHACL shapes for the demo data
 │   ├── queries/                 # 01-03 sample data · 10-11 Olympics (QLever) · 20 federated · 30 SPARQL Anything
 │   ├── rml/                     # services.csv + YARRRML mapping + SDM-RDFizer config, with README
 │   ├── n3/socrates.n3           # Notation3 rules for EYE
+│   ├── nemo/dependencies.rls    # Datalog rules for Nemo
 │   ├── linkml/semantic-stack.yaml       # same model as a LinkML schema
 │   └── out/                     # generated files (git-ignored)
 │
@@ -281,6 +340,13 @@ another compose project (for example a monorepo whose services need `http://fuse
 ├── shacl-play/Dockerfile        # SHACL Play built from upstream source at a pinned release
 ├── pyshacl/Dockerfile           # pySHACL HTTP service from the pinned PyPI release
 ├── skosmos/config.ttl           # Skosmos endpoint + vocabulary configuration
+├── sparnatural/                 # Sparnatural static site: index.html + SHACL config for data/sample
+├── fuseki-geosparql/config.ttl  # Fuseki-main assembler for the geosparql profile (adds update endpoints)
+├── grlc/queries/                # .rq files with #+ headers that grlc serves as a REST API
+├── itb/stack/                   # ITB SHACL validator domain (validation profile)
+├── prometheus/ grafana/         # scrape config, SPARQL exporter modules, Grafana datasource provisioning
+├── pylode/ sparql-mcp/ flexible-graphrag-mcp/   # Dockerfiles for the docs, mcp and graphrag profiles
+├── graphrag/nginx.conf          # one port for the GraphRAG UI and API
 ├── tools/                       # Python toolbox image (+ jelly-cli): Dockerfile, requirements.in, requirements.txt
 ├── ontop/                       # Dockerfile (adds the Postgres JDBC driver), input/ mapping, postgres/ seed
 ├── notebooks/01-hello-stack.ipynb   # JupyterLab starter
@@ -324,6 +390,20 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
 - **Skosmos** uses the plain-SPARQL `Generic` dialect against Fuseki's `ds` dataset, so search is
   regex-based. For large vocabularies create a dedicated Fuseki dataset with a jena-text index over
   the SKOS label properties and switch `skosmos/config.ttl` to the `JenaText` dialect.
+- **Sparnatural** and **Grafana** load their JavaScript bundles and plugin from CDNs / grafana.com on
+  first use, so those two need internet access; vendor the files for offline use.
+- **Prez UI 3.8.3** is the last generic UI image; the 4.x UI is generated per site, so the UI may
+  lag the 4.25 API. **grlc, Graph Explorer, RPT, Virtuoso's isql client** and the MCP images are
+  amd64-only. **LinkedPipes ETL** images are dated snapshots of `main` (no releases) and the
+  **sparql-mcp** image is built from a pinned commit (no releases either).
+- **Flexible GraphRAG** needs a real LLM: set `ANTHROPIC_API_KEY` in `.env` or start the `ollama`
+  profile and set `GRAPHRAG_LLM_PROVIDER=ollama`. The backend image is about 4 GB. Its Fuseki dataset
+  is created through the admin API and is not persisted across Fuseki configuration volumes.
+- **Virtuoso** is GPL-2.0; fine to run, mind it if you redistribute a derived image.
+- **Looked at, not bundled:** Quit Store (git-versioned RDF; last release 2022), iQvoc (only image is
+  from 2022), OLS4 (needs a Docker-socket-driven Nextflow data load), sparql-llm (build-only, prompts
+  tied to SIB's endpoints), WikidataMCP (hosted at `https://wd-mcp.wmcloud.org/mcp`), rareba/sparql-mcp
+  (stdio, not on PyPI). Details in [`reports/`](reports/) and `research_notes/`.
 - **Default credentials** (`admin`/`admin`, `stack`/`stack`) are for local use. Change them in
   `.env` before exposing any port.
 
@@ -332,13 +412,15 @@ RDF by MetaCoding, kept here for convenience and not used by the stack itself.
 ## 🔁 Keeping it fresh
 
 - **CI** ([smoke.yml](.github/workflows/smoke.yml)) brings up the default stack and, in parallel,
-  the QLever (with a real index), Oxigraph and Ontop profiles and the tools image on every PR and
-  weekly, and fails if any service stops answering. It pulls the published images and rebuilds one
+  the QLever (with a real index), Oxigraph and Ontop profiles, the tools image and one job per
+  optional profile (virtuoso, geosparql, prez, grlc, graph-explorer, docs, rpt, lp-etl, validation,
+  observability, mcp, solid; graphrag and ollama are config-checked only) on every PR and weekly,
+  and fails if any service stops answering. It pulls the published images and rebuilds one
   only when its Dockerfile changed, so a run takes about two minutes.
 - **Dependabot** ([dependabot.yml](.github/dependabot.yml)) opens PRs for image tags in the compose
   files and Dockerfiles, the Python packages in `tools/requirements.txt` and the Actions.
 - **Images** ([publish-images.yml](.github/workflows/publish-images.yml)) for WebVOWL,
-  OpenRefine, the toolbox, Ontop, pySHACL and SHACL Play are pushed to
+  OpenRefine, the toolbox, Ontop, pySHACL, SHACL Play, pyLODE, sparql-mcp and the GraphRAG MCP are pushed to
   `ghcr.io/metacoding-io/semantic-stack-*` so `docker compose pull` works for everyone.
 - **Tool selection** follows the October 2026 survey in [`reports/`](reports/), with its source
   notes in `research_notes/`.

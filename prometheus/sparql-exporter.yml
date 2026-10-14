@@ -1,0 +1,25 @@
+# sparql-prometheus-exporter modules (https://github.com/Qup42/sparql-prometheus-exporter).
+# The endpoint is not configured here: Prometheus passes it as ?target= on every scrape.
+modules:
+  stack:
+    timeout: 20s
+    http:
+      method: POST
+    max_concurrency: 2
+    queries:
+      triples:
+        query: SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }
+        metric_name: sparql_triples_total
+        help: "Triples visible in the default graph"
+        value: n
+      services_by_category:
+        query: |
+          PREFIX ss: <http://localhost:8084/vocab/>
+          PREFIX schema: <http://schema.org/>
+          SELECT ?category (COUNT(DISTINCT ?s) AS ?n) WHERE {
+            ?s a ss:Service ; ss:category/schema:name ?category
+          } GROUP BY ?category
+        metric_name: sparql_services
+        help: "Services per category in data/sample"
+        value: n
+        labels: [category]

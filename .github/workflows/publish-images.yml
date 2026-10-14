@@ -1,5 +1,5 @@
 # Publishes the images this repo builds itself, so `docker compose pull` works without a local build.
-# Packages: ghcr.io/metacoding-io/semantic-stack-{webvowl,openrefine,tools,ontop,pyshacl,shacl-play}
+# Packages: ghcr.io/metacoding-io/semantic-stack-{webvowl,openrefine,tools,ontop,pyshacl,shacl-play,pylode,sparql-mcp,flexible-graphrag-mcp}
 name: publish-images
 
 on:
@@ -12,6 +12,9 @@ on:
       - ontop/**
       - pyshacl/**
       - shacl-play/**
+      - pylode/**
+      - sparql-mcp/**
+      - flexible-graphrag-mcp/**
       - .github/workflows/publish-images.yml
   workflow_dispatch:
 
@@ -38,6 +41,12 @@ jobs:
             tags: ghcr.io/metacoding-io/semantic-stack-pyshacl:0.40.1,ghcr.io/metacoding-io/semantic-stack-pyshacl:latest
           - name: shacl-play
             tags: ghcr.io/metacoding-io/semantic-stack-shacl-play:0.12.5,ghcr.io/metacoding-io/semantic-stack-shacl-play:latest
+          - name: pylode
+            tags: ghcr.io/metacoding-io/semantic-stack-pylode:3.6.0,ghcr.io/metacoding-io/semantic-stack-pylode:latest
+          - name: sparql-mcp
+            tags: ghcr.io/metacoding-io/semantic-stack-sparql-mcp:d9c0d57,ghcr.io/metacoding-io/semantic-stack-sparql-mcp:latest
+          - name: flexible-graphrag-mcp
+            tags: ghcr.io/metacoding-io/semantic-stack-flexible-graphrag-mcp:0.8.4,ghcr.io/metacoding-io/semantic-stack-flexible-graphrag-mcp:latest
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4

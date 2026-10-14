@@ -1,0 +1,15 @@
+# GeoSPARQL (geosparql profile, http://localhost:3031/ds/sparql): organisations within 400 km of Zurich,
+# nearest first. Uses geof:distance from the GeoSPARQL function library (Jena GeoSPARQL + Apache SIS).
+PREFIX geo:    <http://www.opengis.net/ont/geosparql#>
+PREFIX geof:   <http://www.opengis.net/def/function/geosparql/>
+PREFIX uom:    <http://www.opengis.net/def/uom/OGC/1.0/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?org ?name ?city (ROUND(?m / 1000) AS ?distance_km)
+WHERE {
+  ?org a schema:Organization ; schema:name ?name ; geo:hasGeometry ?g .
+  ?g geo:asWKT ?wkt ; schema:name ?city .
+  BIND (geof:distance(?wkt, "POINT(8.5417 47.3769)"^^geo:wktLiteral, uom:metre) AS ?m)
+  FILTER (?m < 400000)
+}
+ORDER BY ?m

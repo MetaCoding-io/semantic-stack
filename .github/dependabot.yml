@@ -21,6 +21,9 @@ updates:
       - /ontop
       - /pyshacl
       - /shacl-play
+      - /pylode
+      - /sparql-mcp
+      - /flexible-graphrag-mcp
     schedule:
       interval: weekly
     ignore:

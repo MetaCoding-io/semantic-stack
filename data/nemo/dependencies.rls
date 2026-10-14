@@ -1,0 +1,13 @@
+% Nemo rules over data/sample: transitive closure of ss:dependsOn.
+%   docker compose --profile tools run --rm nemo -D out -o nemo/dependencies.rls
+% writes data/out/nemo-derived.ttl. Syntax: https://knowsys.github.io/nemo-doc/
+@prefix ss: <http://localhost:8084/vocab/> .
+
+@import triple :- turtle { resource = "sample/semantic-stack.ttl" } .
+
+dependsOn(?a, ?b) :- triple(?a, ss:dependsOn, ?b) .
+dependsOn(?a, ?c) :- dependsOn(?a, ?b), dependsOn(?b, ?c) .
+
+derived(?a, ss:transitivelyDependsOn, ?b) :- dependsOn(?a, ?b) .
+
+@export derived :- turtle { resource = "nemo-derived.ttl" } .

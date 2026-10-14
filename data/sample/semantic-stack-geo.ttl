@@ -1,0 +1,25 @@
+# GeoSPARQL sample: where the organisations behind the stack's services sit (approximate city
+# coordinates, WGS84 longitude/latitude). Loaded by scripts/load.sh; meaningful in the geosparql
+# profile (http://localhost:3031), see data/queries/40-geosparql-nearby.rq.
+@prefix geo:  <http://www.opengis.net/ont/geosparql#> .
+@prefix org:  <http://localhost:8084/org/> .
+@prefix place: <http://localhost:8084/place/> .
+@prefix schema: <http://schema.org/> .
+
+org:apache       geo:hasGeometry place:wilmington .
+org:eclipse      geo:hasGeometry place:ottawa .
+org:uni-freiburg geo:hasGeometry place:freiburg .
+org:zazuko       geo:hasGeometry place:zurich .
+org:ontotext     geo:hasGeometry place:sofia .
+org:imec         geo:hasGeometry place:ghent .
+org:ontop        geo:hasGeometry place:bolzano .
+org:visualdataweb geo:hasGeometry place:stuttgart .
+
+place:wilmington a geo:Geometry ; schema:name "Wilmington, DE" ; geo:asWKT "POINT(-75.5466 39.7459)"^^geo:wktLiteral .
+place:ottawa     a geo:Geometry ; schema:name "Ottawa" ;         geo:asWKT "POINT(-75.6972 45.4215)"^^geo:wktLiteral .
+place:freiburg   a geo:Geometry ; schema:name "Freiburg" ;       geo:asWKT "POINT(7.8421 47.9990)"^^geo:wktLiteral .
+place:zurich     a geo:Geometry ; schema:name "Zurich" ;         geo:asWKT "POINT(8.5417 47.3769)"^^geo:wktLiteral .
+place:sofia      a geo:Geometry ; schema:name "Sofia" ;          geo:asWKT "POINT(23.3219 42.6977)"^^geo:wktLiteral .
+place:ghent      a geo:Geometry ; schema:name "Ghent" ;          geo:asWKT "POINT(3.7174 51.0543)"^^geo:wktLiteral .
+place:bolzano    a geo:Geometry ; schema:name "Bolzano" ;        geo:asWKT "POINT(11.3548 46.4983)"^^geo:wktLiteral .
+place:stuttgart  a geo:Geometry ; schema:name "Stuttgart" ;      geo:asWKT "POINT(9.1829 48.7758)"^^geo:wktLiteral .

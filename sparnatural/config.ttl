@@ -1,0 +1,180 @@
+# Sparnatural SHACL configuration for data/sample/semantic-stack.ttl.
+# Reference: https://docs.sparnatural.eu/SHACL-based-configuration.html
+# Each sh:NodeShape is a class the user can pick; each property shape is a criterion with a widget.
+@prefix sh:          <http://www.w3.org/ns/shacl#> .
+@prefix dash:        <http://datashapes.org/dash#> .
+@prefix core:        <http://data.sparna.fr/ontologies/sparnatural-config-core#> .
+@prefix datasources: <http://data.sparna.fr/ontologies/sparnatural-config-datasources#> .
+@prefix volipi:      <http://data.sparna.fr/ontologies/volipi#> .
+@prefix rdfs:        <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:         <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:         <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:         <http://www.w3.org/2002/07/owl#> .
+@prefix schema:      <http://schema.org/> .
+@prefix ss:          <http://localhost:8084/vocab/> .
+@prefix this:        <http://localhost:8084/sparnatural-config/> .
+
+<http://localhost:8084/sparnatural-config> a owl:Ontology ;
+    rdfs:label "semantic-stack Sparnatural configuration"@en .
+
+# ---------------------------------------------------------------- Service
+this:Service a sh:NodeShape ;
+    sh:targetClass ss:Service ;
+    rdfs:label "Service"@en ;
+    sh:description "A deployable component of the stack, usually one container."@en ;
+    sh:order 1 ;
+    volipi:iconName "fa-solid fa-cube" ;
+    sh:property this:Service_name, this:Service_description, this:Service_category,
+                this:Service_implements, this:Service_dependsOn, this:Service_maintainedBy,
+                this:Service_port, this:Service_dockerImage, this:Service_language, this:Service_optional .
+
+this:Service_name sh:path schema:name ;
+    sh:name "name"@en ; sh:order 1 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:string ;
+    sh:minCount 1 ; sh:maxCount 1 ;
+    dash:propertyRole dash:LabelRole ;
+    dash:searchWidget core:SearchProperty .
+
+this:Service_description sh:path schema:description ;
+    sh:name "description"@en ; sh:order 2 ;
+    sh:nodeKind sh:Literal ; sh:datatype rdf:langString ;
+    dash:searchWidget core:SearchProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Service_category sh:path ss:category ;
+    sh:name "category"@en ; sh:order 3 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Category ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha_with_count ;
+    core:enableOptional "true"^^xsd:boolean ;
+    core:enableNegation "true"^^xsd:boolean .
+
+this:Service_implements sh:path ss:implements ;
+    sh:name "implements standard"@en ; sh:order 4 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Standard ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha_with_count ;
+    core:enableOptional "true"^^xsd:boolean ;
+    core:enableNegation "true"^^xsd:boolean .
+
+this:Service_dependsOn sh:path ss:dependsOn ;
+    sh:name "depends on"@en ; sh:order 5 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Service ;
+    dash:searchWidget core:AutocompleteProperty ;
+    datasources:datasource datasources:search_schemaname_contains ;
+    core:enableOptional "true"^^xsd:boolean ;
+    core:enableNegation "true"^^xsd:boolean .
+
+this:Service_maintainedBy sh:path ss:maintainedBy ;
+    sh:name "maintained by"@en ; sh:order 6 ;
+    sh:nodeKind sh:IRI ; sh:class schema:Organization ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha ;
+    core:enableOptional "true"^^xsd:boolean ;
+    core:enableNegation "true"^^xsd:boolean .
+
+this:Service_port sh:path ss:port ;
+    sh:name "host port"@en ; sh:order 7 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:integer ;
+    dash:searchWidget core:NumberProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Service_dockerImage sh:path ss:dockerImage ;
+    sh:name "docker image"@en ; sh:order 8 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:string ;
+    dash:searchWidget core:SearchProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Service_language sh:path ss:language ;
+    sh:name "implementation language"@en ; sh:order 9 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:string ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_URI_or_literal_alpha_with_count ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Service_optional sh:path ss:optional ;
+    sh:name "optional (behind a profile)"@en ; sh:order 10 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:boolean ;
+    dash:searchWidget core:BooleanProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+# ---------------------------------------------------------------- Category
+this:Category a sh:NodeShape ;
+    sh:targetClass ss:Category ;
+    rdfs:label "Category"@en ;
+    sh:description "What kind of job a service does."@en ;
+    sh:order 2 ;
+    volipi:iconName "fa-solid fa-tags" ;
+    sh:property this:Category_name, this:Category_description, this:Category_categoryOf .
+
+this:Category_name sh:path schema:name ;
+    sh:name "name"@en ; sh:order 1 ;
+    sh:nodeKind sh:Literal ; sh:datatype rdf:langString ;
+    sh:minCount 1 ;
+    dash:propertyRole dash:LabelRole ;
+    dash:searchWidget core:SearchProperty .
+
+this:Category_description sh:path schema:description ;
+    sh:name "description"@en ; sh:order 2 ;
+    sh:nodeKind sh:Literal ; sh:datatype rdf:langString ;
+    dash:searchWidget core:SearchProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Category_categoryOf sh:path [ sh:inversePath ss:category ] ;
+    sh:name "category of service"@en ; sh:order 3 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Service ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha ;
+    core:enableOptional "true"^^xsd:boolean .
+
+# ---------------------------------------------------------------- Standard
+this:Standard a sh:NodeShape ;
+    sh:targetClass ss:Standard ;
+    rdfs:label "Standard"@en ;
+    sh:description "A specification a service implements."@en ;
+    sh:order 3 ;
+    volipi:iconName "fa-solid fa-file-lines" ;
+    sh:property this:Standard_name, this:Standard_publishedYear, this:Standard_implementedBy .
+
+this:Standard_name sh:path schema:name ;
+    sh:name "name"@en ; sh:order 1 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    dash:propertyRole dash:LabelRole ;
+    dash:searchWidget core:SearchProperty .
+
+this:Standard_publishedYear sh:path ss:publishedYear ;
+    sh:name "published year"@en ; sh:order 2 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:integer ;
+    dash:searchWidget core:NumberProperty ;
+    core:enableOptional "true"^^xsd:boolean .
+
+this:Standard_implementedBy sh:path [ sh:inversePath ss:implements ] ;
+    sh:name "implemented by"@en ; sh:order 3 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Service ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha ;
+    core:enableOptional "true"^^xsd:boolean .
+
+# ---------------------------------------------------------------- Organization
+this:Organization a sh:NodeShape ;
+    sh:targetClass schema:Organization ;
+    rdfs:label "Organization"@en ;
+    sh:description "Who maintains a service."@en ;
+    sh:order 4 ;
+    volipi:iconName "fa-solid fa-building" ;
+    sh:property this:Organization_name, this:Organization_maintains .
+
+this:Organization_name sh:path schema:name ;
+    sh:name "name"@en ; sh:order 1 ;
+    sh:nodeKind sh:Literal ; sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    dash:propertyRole dash:LabelRole ;
+    dash:searchWidget core:SearchProperty .
+
+this:Organization_maintains sh:path [ sh:inversePath ss:maintainedBy ] ;
+    sh:name "maintains"@en ; sh:order 2 ;
+    sh:nodeKind sh:IRI ; sh:class ss:Service ;
+    dash:searchWidget core:ListProperty ;
+    datasources:datasource datasources:list_schemaname_alpha ;
+    core:enableOptional "true"^^xsd:boolean .

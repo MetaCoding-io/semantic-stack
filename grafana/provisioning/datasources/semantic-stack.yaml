@@ -1,0 +1,19 @@
+# Grafana datasources for the observability profile. URLs are what the Grafana *server* calls,
+# hence container names. The SPARQL datasource is the Flanders Make catalog plugin
+# (flandersmake-sparql-datasource), preinstalled by GF_PLUGINS_PREINSTALL_SYNC in compose.yml.
+apiVersion: 1
+datasources:
+  - name: Fuseki SPARQL
+    uid: fuseki-sparql
+    type: flandersmake-sparql-datasource
+    access: proxy
+    editable: true
+    jsonData:
+      source: http://fuseki:3030/ds/sparql
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true

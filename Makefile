@@ -4,7 +4,7 @@ export QLEVER_UID ?= $(shell id -u)
 export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs load smoke qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up build clean
+.PHONY: help up down restart ps logs load smoke qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up profile virtuoso-up geosparql-up prez-up grlc-up graph-explorer-up docs-up rpt-up lp-etl-up validation-up observability-up mcp-up graphrag-up ollama-up solid-up build clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -24,7 +24,7 @@ ps: ## Show service status
 logs: ## Tail logs (make logs S=fuseki for one service)
 	$(COMPOSE) --profile '*' logs -f --tail=100 $(S)
 
-build: ## Build the locally built images (WebVOWL, OpenRefine, SHACL Play, pySHACL, tools, Ontop)
+build: ## Build the locally built images (WebVOWL, OpenRefine, SHACL Play, pySHACL, pyLODE, sparql-mcp, graphrag-mcp, tools, Ontop)
 	$(COMPOSE) --profile '*' build
 
 load: ## Load data/sample into Fuseki (and Oxigraph when it is running)
@@ -59,6 +59,51 @@ ontop-up: ## Start Postgres + Ontop virtual knowledge graph demo on http://local
 
 graphdb-up: ## Start GraphDB on http://localhost:7200
 	$(COMPOSE) --profile graphdb up -d graphdb
+
+profile: ## Start any profile: make profile P=prez (see `docker compose config --profiles`)
+	$(COMPOSE) --profile $(P) up -d
+
+virtuoso-up: ## Add Virtuoso on http://localhost:8890 (Conductor at /conductor), then `make load`
+	$(COMPOSE) --profile virtuoso up -d --wait virtuoso
+
+geosparql-up: ## Add Fuseki + GeoSPARQL on http://localhost:3031, then `make load`
+	$(COMPOSE) --profile geosparql up -d --wait fuseki-geosparql
+
+prez-up: ## Add the Prez Linked Data API (:8000) and UI (:8001) over Fuseki
+	$(COMPOSE) --profile prez up -d
+
+grlc-up: ## Add grlc on http://localhost:8088/api-local/ (REST API from grlc/queries/*.rq)
+	$(COMPOSE) --profile grlc up -d
+
+graph-explorer-up: ## Add AWS Graph Explorer on http://localhost:8095/explorer
+	$(COMPOSE) --profile graph-explorer up -d
+
+docs-up: ## Add the pyLODE server on http://localhost:8096
+	$(COMPOSE) --profile docs up -d
+
+rpt-up: ## Add RPT (SPARQL/GraphQL server with YASGUI over Fuseki) on http://localhost:8642
+	$(COMPOSE) --profile rpt up -d
+
+lp-etl-up: ## Add LinkedPipes ETL on http://localhost:9080 (four containers)
+	$(COMPOSE) --profile lp-etl up -d
+
+validation-up: ## Add the ITB SHACL validator on http://localhost:8097/shacl/stack/upload
+	$(COMPOSE) --profile validation up -d
+
+observability-up: ## Add Prometheus (:9091), the SPARQL exporter (:9199) and Grafana (:3000)
+	$(COMPOSE) --profile observability up -d
+
+mcp-up: ## Add the MCP servers: sparql-mcp (:8103), rudof-mcp (:8102), open-ontologies (:8101)
+	$(COMPOSE) --profile mcp up -d
+
+graphrag-up: ## Add Flexible GraphRAG + Qdrant (needs ANTHROPIC_API_KEY or the ollama profile) on http://localhost:8105
+	$(COMPOSE) --profile graphrag up -d
+
+ollama-up: ## Add Ollama on http://localhost:11434 (then: docker compose --profile ollama exec ollama ollama pull qwen3:8b)
+	$(COMPOSE) --profile ollama up -d
+
+solid-up: ## Add the Community Solid Server on http://localhost:8100
+	$(COMPOSE) --profile solid up -d
 
 clean: ## Stop everything and delete volumes and the QLever index
 	$(COMPOSE) --profile '*' down -v --remove-orphans

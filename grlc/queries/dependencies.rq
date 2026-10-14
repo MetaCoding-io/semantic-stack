@@ -1,0 +1,15 @@
+#+ summary: Which services depend on which
+#+ description: Direct ss:dependsOn links between services.
+#+ method: GET
+#+ tags:
+#+   - semantic-stack
+
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?service ?dependsOn
+WHERE {
+  ?s a ss:Service ; schema:name ?service ; ss:dependsOn ?d .
+  ?d schema:name ?dependsOn .
+}
+ORDER BY ?service

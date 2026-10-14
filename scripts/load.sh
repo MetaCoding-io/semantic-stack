@@ -3,6 +3,8 @@
 #   Fuseki   -> named graph via the Graph Store Protocol (the dataset uses unionDefaultGraph,
 #               so data in a *named* graph is what default-graph queries see)
 #   Oxigraph -> same, only when it is running (profile oxigraph)
+#   Fuseki + GeoSPARQL -> same as Fuseki, only when it is running (profile geosparql)
+#   Virtuoso -> Graph Store endpoint with HTTP digest auth, only when it is running (profile virtuoso)
 # QLever is read-only at runtime: index files with `make qlever-index` instead.
 #
 # Usage: scripts/load.sh [file.ttl ...]      (default: data/sample/*.ttl)
@@ -14,6 +16,9 @@ if [ -f .env ]; then set -a; . ./.env; set +a; fi
 FUSEKI_URL="${FUSEKI_URL:-http://localhost:${FUSEKI_PORT:-3030}}"
 FUSEKI_ADMIN_PASSWORD="${FUSEKI_ADMIN_PASSWORD:-admin}"
 OXIGRAPH_URL="${OXIGRAPH_URL:-http://localhost:${OXIGRAPH_PORT:-7878}}"
+GEOSPARQL_URL="${GEOSPARQL_URL:-http://localhost:${FUSEKI_GEOSPARQL_PORT:-3031}}"
+VIRTUOSO_URL="${VIRTUOSO_URL:-http://localhost:${VIRTUOSO_PORT:-8890}}"
+VIRTUOSO_DBA_PASSWORD="${VIRTUOSO_DBA_PASSWORD:-dba}"
 GRAPH="${GRAPH:-http://localhost:${TRIFID_PORT:-8084}/graph/semantic-stack}"
 
 FILES=("$@")
@@ -49,4 +54,27 @@ if curl -sf -o /dev/null "$OXIGRAPH_URL/query?query=ASK%7B%7D"; then
   echo "Oxigraph triples in graph: $(count "$OXIGRAPH_URL/query")"
 else
   echo "Oxigraph not running, skipped (start it with: make oxigraph-up)"
+fi
+
+if curl -sf -o /dev/null "$GEOSPARQL_URL/ds/sparql?query=ASK%7B%7D"; then
+  for f in "${FILES[@]}"; do
+    curl -sfS -u "admin:$FUSEKI_ADMIN_PASSWORD" -X POST -H 'Content-Type: text/turtle' \
+      --data-binary "@$f" "$GEOSPARQL_URL/ds/data?graph=$G" > /dev/null
+    echo "GeoSPARQL <- $f"
+  done
+  echo "GeoSPARQL triples in graph: $(count "$GEOSPARQL_URL/ds/sparql")"
+else
+  echo "Fuseki+GeoSPARQL not running, skipped (profile geosparql)"
+fi
+
+if curl -sf -o /dev/null "$VIRTUOSO_URL/sparql?query=ASK%7B%7D"; then
+  for f in "${FILES[@]}"; do
+    # Virtuoso's authenticated Graph Store endpoint uses HTTP digest auth; POST appends to the graph.
+    curl -sfS --digest -u "dba:$VIRTUOSO_DBA_PASSWORD" -X POST -H 'Content-Type: text/turtle' \
+      --data-binary "@$f" "$VIRTUOSO_URL/sparql-graph-crud-auth?graph=$G" > /dev/null
+    echo "Virtuoso <- $f"
+  done
+  echo "Virtuoso triples in graph: $(count "$VIRTUOSO_URL/sparql")"
+else
+  echo "Virtuoso not running, skipped (profile virtuoso)"
 fi
