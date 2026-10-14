@@ -15,3 +15,10 @@ docker compose --profile tools run --rm rmlmapper -m /data/rml/mapping.rml.ttl -
 
 Write RML by hand if you prefer; RMLMapper also executes R2RML against databases
 (pass `-dsn`, `-u`, `-p`). Generated files are ignored by git.
+
+The same RML runs on SDM-RDFizer, a second engine that scored 100 % on every module of the new
+RML specification in the 2026 Knowledge Graph Construction Workshop challenge:
+
+```bash
+docker compose --profile tools run --rm sdm-rdfizer      # reads sdm-rdfizer.ini, writes sdm-output/
+```

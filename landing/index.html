@@ -60,6 +60,15 @@
       <p>Repository manager. Add a "SPARQL endpoint proxy" repository pointing at <code>http://qlever:7001</code> or <code>http://fuseki:3030/ds/sparql</code>.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8087/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8087/sparql?query=SELECT%20(COUNT(*)%20AS%20%3Fn)%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D">Comunica</a></h3>
       <p>Federated SPARQL endpoint over every store in the stack at <code>/sparql</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8090/sparql?query=ASK%7B%7D"></span><a href="http://localhost:8090/sparql">sparql-proxy</a></h3>
+      <p>Cache, job queue and concurrency limit in front of the primary store; rejects SPARQL Update. The read-only, CORS-enabled endpoint to hand to browser tools.</p>
+      <div class="links"><a href="http://localhost:8090/sparql">/sparql</a><a href="http://localhost:8090/admin">admin dashboard</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8092/osparklis.html"></span><a href="http://localhost:8092/?title=semantic-stack&amp;endpoint=http%3A%2F%2Flocalhost%3A8090%2Fsparql">Sparklis</a></h3>
+      <p>Build SPARQL by clicking through the data in plain English. Opens on the primary store via sparql-proxy.</p>
+      <div class="links"><a href="http://localhost:8092/osparklis.html">full UI with endpoint picker</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:9090/"></span><a href="http://localhost:9090/">Skosmos</a></h3>
+      <p>SKOS vocabulary browser and REST API over Fuseki. Shows the sample thesaurus of tool categories after <code>make load</code>.</p>
+      <div class="links"><a href="http://localhost:9090/stack/en/">stack vocabulary</a><a href="http://localhost:9090/rest/v1/vocabularies?lang=en">REST</a></div></div>
   </div>
 
   <h2>Transform and model</h2>
@@ -70,8 +79,16 @@
       <p>Virtual knowledge graph over Postgres. Optional: <code>make ontop-up</code>, then query <code>/sparql</code>.</p></div>
     <div class="card"><h3><span class="dot" data-probe="http://localhost:8888/api"></span><a href="http://localhost:8888/">JupyterLab</a></h3>
       <p>rdflib, pySHACL, LinkML, pyLODE, SPARQLWrapper. Optional: <code>make jupyter-up</code>.</p></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8093/sparql"></span><a href="http://localhost:8093/sparql">SPARQL Anything</a></h3>
+      <p>Query CSV, JSON, XML, HTML or spreadsheets as RDF with no mapping. <code>./data</code> is visible as <code>/data</code>; try <code>data/queries/30-sparql-anything-csv.rq</code>.</p>
+      <div class="links"><a href="http://localhost:8093/sparql">YASGUI</a><a href="http://localhost:8093/sparql.anything">/sparql.anything</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8091/"></span><a href="http://localhost:8091/">SHACL Play</a></h3>
+      <p>Validate against shapes with readable reports, document shapes as HTML and UML, generate shapes from data, OWL to SHACL, SHACL rules.</p>
+      <div class="links"><a href="http://localhost:8091/validate">validate</a><a href="http://localhost:8091/doc">document</a><a href="http://localhost:8091/generate">generate</a></div></div>
+    <div class="card"><h3><span class="dot" data-probe="http://localhost:8099/docs/openapi.json"></span><a href="http://localhost:8099/docs/swagger">pySHACL service</a></h3>
+      <p>SHACL validation over HTTP: <code>POST /validate</code> with <code>data_graph</code> and <code>shapes_graph</code>. OpenAPI docs at <code>/docs/swagger</code>.</p></div>
     <div class="card"><h3><span class="dot ok"></span>CLI tools</h3>
-      <p>RMLMapper, YARRRML, pySHACL, LinkML generators via <code>docker compose --profile tools run --rm &lt;service&gt;</code>. See <code>data/README.md</code>.</p></div>
+      <p>RMLMapper, YARRRML, SDM-RDFizer, rudof (ShEx/SHACL), EYE (N3 reasoning), jelly-cli, pySHACL, LinkML generators via <code>docker compose --profile tools run --rm &lt;service&gt;</code>. See <code>data/README.md</code>.</p></div>
   </div>
 
   <h2>First steps</h2>

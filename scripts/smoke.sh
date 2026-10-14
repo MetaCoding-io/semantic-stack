@@ -3,7 +3,9 @@
 #
 # Usage: scripts/smoke.sh [check ...]
 #   default checks: landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica
+#                   sparql-proxy skosmos sparklis shacl-play pyshacl sparql-anything
 #   extra checks:   oxigraph oxigraph-data fuseki-data ontop ontop-data trifid-query rdf4j-ui graphdb
+#                   skosmos-data pyshacl-validate
 # Env: RETRIES (default 30), SLEEP seconds between retries (default 5), plus the *_PORT variables from .env.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -24,7 +26,7 @@ http() {
   local name="$1" url="$2" want="${3:-}" i body code jar
   jar="$(mktemp)"   # cookie jar: the RDF4J Workbench keeps its server selection in a cookie
   for ((i=1; i<=RETRIES; i++)); do
-    body="$(curl -sS -L --max-time 15 -c "$jar" -b "$jar" -H 'Accept: application/sparql-results+json, text/html;q=0.9, */*;q=0.8' -w '\n%{http_code}' "$url" 2>/dev/null)" || body=$'\n000'
+    body="$(curl -sS -L --max-time 15 -c "$jar" -b "$jar" -H "Accept: ${ACCEPT:-application/sparql-results+json, text/html;q=0.9, */*;q=0.8}" -w '\n%{http_code}' "$url" 2>/dev/null)" || body=$'\n000'
     code="${body##*$'\n'}"
     if [[ "$code" =~ ^2 ]] && { [ -z "$want" ] || grep -q -- "$want" <<<"$body"; }; then ok "$name" "$url"; rm -f "$jar"; return 0; fi
     sleep "$SLEEP"
@@ -37,7 +39,19 @@ sparql() { http "$1" "$2?query=$SELECT1" '"head"'; }   # any SPARQL engine retur
 ask()    { http "$1" "$2?query=$(printf '%s' "$3" | sed 's/ /%20/g; s/#/%23/g; s/{/%7B/g; s/}/%7D/g; s/</%3C/g; s/>/%3E/g; s/?/%3F/g; s/:/%3A/g; s/\//%2F/g')" 'true'; }
 
 checks=("$@")
-[ ${#checks[@]} -eq 0 ] && checks=(landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica)
+[ ${#checks[@]} -eq 0 ] && checks=(landing qlever qlever-ui fuseki rdf4j openrefine webvowl trifid blueprint comunica sparql-proxy skosmos sparklis shacl-play pyshacl sparql-anything)
+
+# post NAME URL CONTENT-TYPE BODY [expected substring]  - one POST, retried like http()
+post() {
+  local name="$1" url="$2" ctype="$3" data="$4" want="${5:-}" i body code
+  for ((i=1; i<=RETRIES; i++)); do
+    body="$(curl -sS --max-time 30 -H "Content-Type: $ctype" -H 'Accept: application/json' --data-binary "$data" -w '\n%{http_code}' "$url" 2>/dev/null)" || body=$'\n000'
+    code="${body##*$'\n'}"
+    if [[ "$code" =~ ^2 ]] && { [ -z "$want" ] || grep -q -- "$want" <<<"$body"; }; then ok "$name" "$url"; return 0; fi
+    sleep "$SLEEP"
+  done
+  bad "$name" "$url (last status $code)"; return 1
+}
 
 echo "Smoke test (retries=$RETRIES, sleep=${SLEEP}s)"
 for c in "${checks[@]}"; do
@@ -60,6 +74,15 @@ for c in "${checks[@]}"; do
     ontop)       sparql ontop       "$H:${ONTOP_PORT:-8089}/sparql" ;;
     ontop-data)  ask    ontop-data  "$H:${ONTOP_PORT:-8089}/sparql" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     graphdb)     http   graphdb     "$H:${GRAPHDB_PORT:-7200}/rest/repositories" ;;
+    sparql-proxy) ACCEPT=application/sparql-results+json sparql sparql-proxy "$H:${SPARQL_PROXY_PORT:-8090}/sparql" ;;
+    skosmos)     http   skosmos     "$H:${SKOSMOS_PORT:-9090}/" "Skosmos" ;;
+    skosmos-data) http  skosmos-data "$H:${SKOSMOS_PORT:-9090}/rest/v1/stack/topConcepts?lang=en" "Storage and querying" ;;
+    sparklis)    http   sparklis    "$H:${SPARKLIS_PORT:-8092}/osparklis.html" "Sparklis" ;;
+    shacl-play)  http   shacl-play  "$H:${SHACL_PLAY_PORT:-8091}/" "SHACL" ;;
+    pyshacl)     http   pyshacl     "$H:${PYSHACL_PORT:-8099}/docs/openapi.json" "validate" ;;
+    pyshacl-validate) post pyshacl-validate "$H:${PYSHACL_PORT:-8099}/validate" application/json \
+                   "$(python3 -c 'import json,sys; print(json.dumps({"data_graph": open("data/sample/semantic-stack.ttl").read(), "shapes_graph": open("data/sample/shapes.ttl").read()}))')" '"conforms"' ;;
+    sparql-anything) sparql sparql-anything "$H:${SPARQL_ANYTHING_PORT:-8093}/sparql.anything" ;;
     *) bad "$c" "unknown check" ;;
   esac
 done

@@ -16,6 +16,8 @@ updates:
       - /webvowl
       - /tools
       - /ontop
+      - /pyshacl
+      - /shacl-play
     schedule:
       interval: weekly
 

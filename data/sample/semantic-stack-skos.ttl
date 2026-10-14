@@ -1,0 +1,124 @@
+# SKOS thesaurus of the stack's tool categories, for browsing in Skosmos (http://localhost:9090).
+# Loaded into Fuseki by scripts/load.sh with the rest of data/sample. The leaf concepts are
+# skos:exactMatch to the ss:Category resources in semantic-stack.ttl.
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix ks:      <http://localhost:8084/skos/> .
+@prefix cat:     <http://localhost:8084/category/> .
+
+ks:categories a skos:ConceptScheme ;
+    skos:prefLabel "Semantic stack categories"@en ;
+    dcterms:title "Semantic stack categories"@en ;
+    dcterms:description "What each tool in the semantic-stack is for, as a small SKOS thesaurus."@en ;
+    dcterms:created "2026-10-14"^^xsd:date ;
+    skos:hasTopConcept ks:storage, ks:transformation, ks:modelling, ks:exploration .
+
+# ---- top concepts -------------------------------------------------------------
+ks:storage a skos:Concept ;
+    skos:inScheme ks:categories ; skos:topConceptOf ks:categories ;
+    skos:prefLabel "Storage and querying"@en ;
+    skos:altLabel "Stores"@en ;
+    skos:definition "Services that hold RDF and answer SPARQL."@en ;
+    skos:notation "1" ;
+    skos:narrower ks:triple-store, ks:virtual-kg, ks:federated-query, ks:query-proxy .
+
+ks:transformation a skos:Concept ;
+    skos:inScheme ks:categories ; skos:topConceptOf ks:categories ;
+    skos:prefLabel "Data transformation"@en ;
+    skos:altLabel "ETL"@en ;
+    skos:definition "Getting tables, JSON, XML and databases into RDF, and cleaning them up first."@en ;
+    skos:notation "2" ;
+    skos:narrower ks:mapping, ks:data-cleaning, ks:facade-query, ks:streaming-format .
+
+ks:modelling a skos:Concept ;
+    skos:inScheme ks:categories ; skos:topConceptOf ks:categories ;
+    skos:prefLabel "Modelling and validation"@en ;
+    skos:definition "Describing what the data should look like and checking that it does."@en ;
+    skos:notation "3" ;
+    skos:narrower ks:shacl-validation, ks:shape-documentation, ks:reasoning, ks:schema-language .
+
+ks:exploration a skos:Concept ;
+    skos:inScheme ks:categories ; skos:topConceptOf ks:categories ;
+    skos:prefLabel "Exploration and visualisation"@en ;
+    skos:altLabel "Browsing"@en ;
+    skos:definition "User interfaces for looking at a graph without writing SPARQL by hand."@en ;
+    skos:notation "4" ;
+    skos:narrower ks:linked-data-frontend, ks:graph-browser, ks:ontology-visualisation, ks:query-builder, ks:vocabulary-browser .
+
+# ---- storage and querying -----------------------------------------------------
+ks:triple-store a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:storage ;
+    skos:prefLabel "Triple store"@en ; skos:altLabel "RDF store"@en, "Quad store"@en ;
+    skos:definition "A database for RDF with a SPARQL endpoint."@en ;
+    skos:example "QLever, Apache Jena Fuseki, Oxigraph, GraphDB"@en ;
+    skos:notation "1.1" ; skos:exactMatch cat:triple-store .
+ks:virtual-kg a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:storage ;
+    skos:prefLabel "Virtual knowledge graph"@en ; skos:altLabel "OBDA"@en ;
+    skos:definition "SPARQL over a relational database without copying the data."@en ;
+    skos:example "Ontop"@en ; skos:notation "1.2" ; skos:exactMatch cat:virtualisation .
+ks:federated-query a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:storage ;
+    skos:prefLabel "Federated querying"@en ;
+    skos:definition "One SPARQL endpoint that answers from several stores."@en ;
+    skos:example "Comunica"@en ; skos:notation "1.3" .
+ks:query-proxy a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:storage ;
+    skos:prefLabel "SPARQL proxy"@en ; skos:altLabel "Query cache"@en ;
+    skos:definition "Sits in front of an endpoint to cache results, queue jobs and block updates."@en ;
+    skos:example "sparql-proxy"@en ; skos:notation "1.4" .
+
+# ---- data transformation ------------------------------------------------------
+ks:mapping a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:transformation ;
+    skos:prefLabel "Declarative mapping"@en ; skos:altLabel "RML"@en, "R2RML"@en ;
+    skos:definition "Turning structured sources into RDF with mapping rules."@en ;
+    skos:example "RMLMapper, SDM-RDFizer, YARRRML"@en ; skos:notation "2.1" ; skos:exactMatch cat:transformation .
+ks:data-cleaning a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:transformation ;
+    skos:prefLabel "Data cleaning"@en ; skos:altLabel "Reconciliation"@en ;
+    skos:definition "Interactive clean-up and reconciliation before mapping."@en ;
+    skos:example "OpenRefine"@en ; skos:notation "2.2" .
+ks:facade-query a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:transformation ;
+    skos:prefLabel "Querying non-RDF files as RDF"@en ; skos:altLabel "Facade-X"@en ;
+    skos:definition "SPARQL directly over CSV, JSON, XML, HTML or spreadsheets."@en ;
+    skos:example "SPARQL Anything"@en ; skos:notation "2.3" .
+ks:streaming-format a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:transformation ;
+    skos:prefLabel "Binary RDF streaming"@en ;
+    skos:definition "Compact serialisations for moving large graphs between tools."@en ;
+    skos:example "Jelly"@en ; skos:notation "2.4" .
+
+# ---- modelling and validation -------------------------------------------------
+ks:shacl-validation a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:modelling ;
+    skos:prefLabel "Shape validation"@en ; skos:altLabel "SHACL"@en, "ShEx"@en ;
+    skos:definition "Checking data against SHACL or ShEx shapes."@en ;
+    skos:example "pySHACL, rudof, SHACL Play, Fuseki /shacl"@en ; skos:notation "3.1" ; skos:exactMatch cat:validation .
+ks:shape-documentation a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:modelling ;
+    skos:prefLabel "Shape and ontology documentation"@en ;
+    skos:definition "Human-readable documentation and diagrams generated from shapes or ontologies."@en ;
+    skos:example "SHACL Play, pyLODE"@en ; skos:notation "3.2" .
+ks:reasoning a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:modelling ;
+    skos:prefLabel "Reasoning and rules"@en ; skos:altLabel "Inference"@en ;
+    skos:definition "Deriving new triples from rules or ontology semantics."@en ;
+    skos:example "EYE (Notation3), OWL-RL"@en ; skos:notation "3.3" .
+ks:schema-language a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:modelling ;
+    skos:prefLabel "Schema-first modelling"@en ;
+    skos:definition "Writing the model once and generating OWL, SHACL and JSON Schema from it."@en ;
+    skos:example "LinkML"@en ; skos:notation "3.4" .
+
+# ---- exploration and visualisation --------------------------------------------
+ks:linked-data-frontend a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:exploration ;
+    skos:prefLabel "Linked Data frontend"@en ; skos:altLabel "Dereferencing"@en ;
+    skos:definition "Makes resource IRIs resolve to pages and data."@en ;
+    skos:example "Trifid"@en ; skos:notation "4.1" ; skos:exactMatch cat:visualisation .
+ks:graph-browser a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:exploration ;
+    skos:prefLabel "Knowledge graph browser"@en ;
+    skos:definition "Navigates instances and their relations interactively."@en ;
+    skos:example "Blueprint, Graph Explorer"@en ; skos:notation "4.2" .
+ks:ontology-visualisation a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:exploration ;
+    skos:prefLabel "Ontology visualisation"@en ;
+    skos:definition "Draws classes and properties of an ontology."@en ;
+    skos:example "WebVOWL"@en ; skos:notation "4.3" .
+ks:query-builder a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:exploration ;
+    skos:prefLabel "Visual query builder"@en ; skos:altLabel "Query editor"@en ;
+    skos:definition "Builds SPARQL by clicking rather than typing."@en ;
+    skos:example "Sparklis, YASGUI, QLever UI"@en ; skos:notation "4.4" ; skos:exactMatch cat:query .
+ks:vocabulary-browser a skos:Concept ; skos:inScheme ks:categories ; skos:broader ks:exploration ;
+    skos:prefLabel "Vocabulary browser"@en ; skos:altLabel "Thesaurus browser"@en ;
+    skos:definition "Publishes SKOS vocabularies for people and machines."@en ;
+    skos:example "Skosmos"@en ; skos:notation "4.5" .

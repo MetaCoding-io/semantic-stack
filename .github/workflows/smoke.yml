@@ -38,7 +38,7 @@ jobs:
           echo "QLEVER_UID=$(id -u)" >> "$GITHUB_ENV"
           echo "QLEVER_GID=$(id -g)" >> "$GITHUB_ENV"
       - name: Build local images
-        run: docker compose build openrefine webvowl
+        run: docker compose build openrefine webvowl pyshacl shacl-play
       - name: Build the QLever index (Olympics demo data)
         run: docker compose --profile setup run --rm qlever-index
       - name: Start the stack
@@ -46,7 +46,7 @@ jobs:
       - name: Load sample data
         run: ./scripts/load.sh
       - name: Smoke test
-        run: ./scripts/smoke.sh landing qlever qlever-ui fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica
+        run: ./scripts/smoke.sh landing qlever qlever-ui fuseki fuseki-data rdf4j openrefine webvowl trifid trifid-query blueprint comunica sparql-proxy skosmos skosmos-data sparklis shacl-play pyshacl pyshacl-validate sparql-anything
       - name: Logs on failure
         if: failure()
         run: |
@@ -60,11 +60,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Start the Oxigraph variant (image-only services)
-        run: docker compose -f compose.yml -f compose.oxigraph.yml up -d --wait --wait-timeout 300 landing oxigraph fuseki trifid comunica blueprint
+        run: docker compose -f compose.yml -f compose.oxigraph.yml up -d --wait --wait-timeout 300 landing oxigraph fuseki trifid comunica blueprint sparql-proxy
       - name: Load sample data into Fuseki and Oxigraph
         run: ./scripts/load.sh
       - name: Smoke test
-        run: ./scripts/smoke.sh landing oxigraph oxigraph-data fuseki fuseki-data trifid trifid-query blueprint comunica
+        run: ./scripts/smoke.sh landing oxigraph oxigraph-data fuseki fuseki-data trifid trifid-query blueprint comunica sparql-proxy
       - name: Logs on failure
         if: failure()
         run: docker compose -f compose.yml -f compose.oxigraph.yml logs --tail 150
@@ -105,3 +105,15 @@ jobs:
           docker compose --profile tools run --rm yarrrml -i /data/rml/mapping.yarrrml.yml -o /data/rml/mapping.rml.ttl
           docker compose --profile tools run --rm rmlmapper -m /data/rml/mapping.rml.ttl -o /data/rml/output.ttl -s turtle
           docker compose --profile tools run --rm tools python -c "from rdflib import Graph; g=Graph().parse('rml/output.ttl'); assert len(g) > 10, len(g); print(len(g), 'triples')"
+      - name: SDM-RDFizer executes the same RML
+        run: |
+          docker compose --profile tools run --rm sdm-rdfizer
+          ls -l data/rml/sdm-output/
+          docker compose --profile tools run --rm tools python -c "import glob; from rdflib import Graph; f=glob.glob('rml/sdm-output/*.ttl')+glob.glob('rml/sdm-output/*.nt'); assert f, 'no output'; g=Graph().parse(f[0]); assert len(g) > 10, len(g); print(f[0], len(g), 'triples')"
+      - name: rudof validates the sample data (SHACL)
+        run: docker compose --profile tools run --rm rudof shacl-validate --shapes sample/shapes.ttl sample/semantic-stack.ttl
+      - name: EYE reasons over Notation3
+        run: docker compose --profile tools run --rm eye --quiet --nope n3/socrates.n3 --pass | tee /dev/stderr | grep -q Mortal
+      - name: jelly-cli round-trips the sample data
+        run: |
+          docker compose --profile tools run --rm tools sh -c 'jelly-cli rdf to-jelly sample/semantic-stack.ttl > out/semantic-stack.jelly && jelly-cli rdf inspect out/semantic-stack.jelly'

@@ -9,7 +9,8 @@
 #   docker compose -f compose.yml -f compose.oxigraph.yml up -d   # Oxigraph as primary store (no indexing step)
 #   docker compose -f compose.yml -f compose.fuseki.yml   up -d   # Fuseki as primary store
 #
-# Optional profiles: setup (QLever indexing), tools (CLI tools), jupyter, ontop, graphdb
+# Optional profiles: setup (QLever indexing), tools (CLI tools: RML, SHACL/ShEx, N3 reasoning,
+# Jelly, Python toolbox), jupyter, ontop, graphdb
 #
 # URL rule of thumb: anything a *browser* loads (Blueprint, the QLever UI backend setting)
 # must use localhost:<host port>; anything a *container* calls (Trifid, Comunica) uses the
@@ -160,6 +161,32 @@ services:
     volumes:
       - ./data:/data
 
+  # SDM-RDFizer: second RML engine, 100 % conformant on the new RML spec modules in the KGCW 2026
+  # challenge. Runs the RML that the yarrrml step produces; config in data/rml/sdm-rdfizer.ini.
+  #   docker compose --profile tools run --rm sdm-rdfizer
+  sdm-rdfizer:
+    profiles: [tools]
+    image: sdmtib/sdmrdfizer:4.7.5.15.2
+    platform: linux/amd64   # upstream publishes amd64 only
+    entrypoint: ["python3", "-m", "rdfizer"]
+    command: ["-c", "/data/rml/sdm-rdfizer.ini"]
+    working_dir: /data
+    volumes:
+      - ./data:/data
+
+  # SPARQL Anything: query CSV, JSON, XML, HTML, spreadsheets, ... as RDF with no mapping at all
+  # (Facade-X). SPARQL endpoint /sparql.anything, YASGUI at /sparql. ./data is visible as /data.
+  #   see data/queries/30-sparql-anything-csv.rq
+  sparql-anything:
+    image: facadex/sparql-anything:v1.2.0
+    <<: *restart
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+    volumes:
+      - ./data:/data:ro
+    ports:
+      - "${SPARQL_ANYTHING_PORT:-8093}:3000"
+
   # ---------------------------------------------------------------- visualisation & browsing
   # WebVOWL + OWL2VOWL converter, built from upstream source (the old war download is gone).
   # First build takes a few minutes; `docker compose pull webvowl` fetches the prebuilt image instead.
@@ -200,6 +227,27 @@ services:
     ports:
       - "${BLUEPRINT_PORT:-8085}:80"
 
+  # Skosmos (National Library of Finland): SKOS vocabulary browser and REST API. Configured in
+  # skosmos/config.ttl against Fuseki (plain SPARQL, "Generic" dialect). Shows the sample
+  # thesaurus data/sample/semantic-stack-skos.ttl once `scripts/load.sh` has run.
+  skosmos:
+    image: quay.io/natlibfi/skosmos:v3.4
+    <<: *restart
+    volumes:
+      - ./skosmos/config.ttl:/var/www/html/config.ttl:ro
+    ports:
+      - "${SKOSMOS_PORT:-9090}:80"
+
+  # Sparklis: visual, natural-language-guided SPARQL query builder. Runs in the browser, so the
+  # endpoint it talks to must allow CORS; the landing page points it at the sparql-proxy.
+  #   http://localhost:8092/?endpoint=http://localhost:8090/sparql
+  sparklis:
+    image: sferre/sparklis:latest@sha256:5cda9856c95b2611a62656478e93c513008f5233075d5fec6a89e5f6c0d279ee   # upstream publishes only `latest`; pinned by digest
+    platform: linux/amd64
+    <<: *restart
+    ports:
+      - "${SPARKLIS_PORT:-8092}:8080"
+
   # ---------------------------------------------------------------- federated querying
   # Comunica as an HTTP SPARQL endpoint federating over every store in the stack.
   #   http://localhost:8087/sparql?query=...
@@ -214,6 +262,57 @@ services:
       - "sparql@http://fuseki:3030/ds/sparql"
     ports:
       - "${COMUNICA_PORT:-8087}:8080"
+
+  # ---------------------------------------------------------------- SPARQL proxy
+  # sparql-proxy (DBCLS): caching, job queue, concurrency limit and admin dashboard in front of
+  # the primary store. Rejects SPARQL Update, so it is the endpoint to hand to browser tools and
+  # to anyone who should not write. Endpoint /sparql (CORS enabled), dashboard /admin.
+  #   admin login: admin / $SPARQL_PROXY_ADMIN_PASSWORD (default admin)
+  # Query logging: set QUERY_LOG_PATH to a writable file to record every query and response.
+  sparql-proxy:
+    image: ghcr.io/dbcls/sparql-proxy:snapshot-a0bf55c   # upstream publishes no release tags; bump the snapshot tag deliberately
+    <<: *restart
+    environment:
+      SPARQL_BACKEND: http://qlever:7001
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: ${SPARQL_PROXY_ADMIN_PASSWORD:-admin}
+      CACHE_STORE: memory
+      MEMORY_MAX_ENTRIES: "1000"
+      MAX_CONCURRENCY: "4"
+      MAX_LIMIT: "100000"
+      TRUST_PROXY: "true"
+    ports:
+      - "${SPARQL_PROXY_PORT:-8090}:3000"
+
+  # ---------------------------------------------------------------- validation
+  # SHACL Play (Sparna): validate data against shapes with readable reports, document shapes as
+  # HTML and UML, generate shapes from data, convert OWL to SHACL, run SHACL rules. Built from
+  # source (see shacl-play/Dockerfile); `docker compose pull shacl-play` fetches the prebuilt image.
+  shacl-play:
+    build: ./shacl-play
+    image: ghcr.io/metacoding-io/semantic-stack-shacl-play:0.12.5
+    <<: *restart
+    environment:
+      JAVA_OPTS: "-Xms256m -Xmx1g"
+    ports:
+      - "${SHACL_PLAY_PORT:-8091}:8080"
+
+  # pySHACL as an HTTP service (OpenAPI). POST JSON {"data_graph": ..., "shapes_graph": ...} to
+  # /validate; Swagger UI at /docs/swagger. Same pySHACL release as the tools image.
+  #   curl -s -X POST http://localhost:8099/validate -H 'Content-Type: application/json' \
+  #     -d "$(jq -n --rawfile d data/sample/semantic-stack.ttl --rawfile s data/sample/shapes.ttl '{data_graph:$d, shapes_graph:$s}')"
+  pyshacl:
+    build: ./pyshacl
+    image: ghcr.io/metacoding-io/semantic-stack-pyshacl:0.40.1
+    <<: *restart
+    ports:
+      - "${PYSHACL_PORT:-8099}:8099"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8099/docs/openapi.json', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   # ---------------------------------------------------------------- tools (profile: tools / jupyter)
   # Python toolbox: rdflib, pySHACL, SPARQLWrapper, OWL-RL, LinkML, pyLODE, pandas.
@@ -232,6 +331,29 @@ services:
     volumes:
       - ./data:/data
     command: ["bash"]
+
+  # rudof: ShEx + SHACL + DCTAP validation and conversion in one Rust binary.
+  #   docker compose --profile tools run --rm rudof shacl-validate --shapes sample/shapes.ttl sample/semantic-stack.ttl
+  #   docker compose --profile tools run --rm rudof shacl sample/shapes.ttl
+  rudof:
+    profiles: [tools]
+    image: angelip2303/rudof:0.3.25
+    platform: linux/amd64   # upstream publishes amd64 only
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["--help"]
+
+  # EYE: Notation3 reasoner (forward and backward chaining).
+  #   docker compose --profile tools run --rm eye --quiet --nope n3/socrates.n3 --pass
+  eye:
+    profiles: [tools]
+    image: eyereasoner/eye:11.24.8
+    platform: linux/amd64   # upstream publishes amd64 only
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["--help"]
 
   jupyter:
     profiles: [jupyter]

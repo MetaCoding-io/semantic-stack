@@ -38,5 +38,9 @@ services:
       - "sparql@http://oxigraph:7878/query"
       - "sparql@http://fuseki:3030/ds/sparql"
 
+  sparql-proxy:
+    environment:
+      SPARQL_BACKEND: http://oxigraph:7878/query
+
 volumes:
   oxigraph_data:

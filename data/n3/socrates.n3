@@ -1,0 +1,11 @@
+# The classic Notation3 example for the EYE reasoner.
+#   docker compose --profile tools run --rm eye --quiet --nope n3/socrates.n3 --pass
+# prints the input plus the derived triple  :Socrates a :Mortal .
+@prefix :     <http://localhost:8084/n3/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+:Socrates a :Human .
+:Human rdfs:subClassOf :Mortal .
+
+# subclass rule
+{ ?A rdfs:subClassOf ?B . ?S a ?A . } => { ?S a ?B . } .
