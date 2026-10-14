@@ -95,7 +95,7 @@ for c in "${checks[@]}"; do
     sparklis)    http   sparklis    "$H:${SPARKLIS_PORT:-8092}/osparklis.html" "Sparklis" ;;
     shacl-play)  http   shacl-play  "$H:${SHACL_PLAY_PORT:-8091}/" "SHACL" ;;
     pyshacl)     http   pyshacl     "$H:${PYSHACL_PORT:-8099}/docs/openapi.json" "validate" ;;
-    pyshacl-validate) post pyshacl-validate "$H:${PYSHACL_PORT:-8099}/validate" application/json \
+    pyshacl-validate) ACCEPT=application/json post pyshacl-validate "$H:${PYSHACL_PORT:-8099}/validate" application/json \
                    "$(python3 -c 'import json,sys; print(json.dumps({"data_graph": open("data/sample/semantic-stack.ttl").read(), "shapes_graph": open("data/sample/shapes.ttl").read()}))')" '"conforms"' ;;
     sparql-anything) sparql sparql-anything "$H:${SPARQL_ANYTHING_PORT:-8093}/sparql.anything" ;;
     sparnatural) http   sparnatural "$H:${SPARNATURAL_PORT:-8094}/" "spar-natural" ;;
@@ -112,8 +112,8 @@ for c in "${checks[@]}"; do
     graph-explorer) http graph-explorer "$H:${GRAPH_EXPLORER_PORT:-8095}/status" "OK" ;;
     pylode)      http   pylode      "$H:${PYLODE_PORT:-8096}/" "pyLODE" ;;
     pylode-render) http pylode-render "$H:${PYLODE_PORT:-8096}/pylode?url=http://landing/data/sample/semantic-stack-vocab.ttl" "Service" ;;
-    rpt)         http   rpt         "$H:${RPT_PORT:-8642}/health" "ready" ;;
-    rpt-query)   sparql rpt-query   "$H:${RPT_PORT:-8642}/sparql" ;;
+    rpt)         sparql rpt         "$H:${RPT_PORT:-8642}/sparql" ;;
+    rpt-query)   ask    rpt-query   "$H:${RPT_PORT:-8642}/sparql" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     lp-etl)      http   lp-etl      "$H:${LP_ETL_PORT:-9080}/" ;;
     itb-shacl)   http   itb-shacl   "$H:${ITB_SHACL_PORT:-8097}/shacl/stack/api/info" '"domain"' ;;
     itb-validate) post  itb-validate "$H:${ITB_SHACL_PORT:-8097}/shacl/stack/api/validate" application/json \

@@ -652,8 +652,13 @@ services:
       GRLC_SERVER_NAME: "localhost:${GRLC_PORT:-8088}"
       GRLC_SPARQL_ENDPOINT: ${GRLC_SPARQL_ENDPOINT:-http://fuseki:3030/ds/sparql}
       GRLC_GITHUB_ACCESS_TOKEN: ${GRLC_GITHUB_ACCESS_TOKEN:-}
+      # The entrypoint chown -R's /home/grlc (queries included) to the grlc user and aborts
+      # when that fails, so the mount must be writable; mapping grlc to your UID keeps the
+      # files on the host owned by you.
+      USERMAP_UID: ${QLEVER_UID:-1000}
+      USERMAP_GID: ${QLEVER_GID:-1000}
     volumes:
-      - ./grlc/queries:/home/grlc/queries:ro
+      - ./grlc/queries:/home/grlc/queries
     ports:
       - "${GRLC_PORT:-8088}:80"
 
@@ -697,7 +702,7 @@ services:
 
   # ---------------------------------------------------------------- RPT (profile: rpt)
   # RDF Processing Toolkit (AKSW): SPARQL server with YASGUI, GraphQL and a Linked Data viewer,
-  # here proxying Fuseki. Landing page /, endpoint /sparql, GraphQL /graphql, health /health.
+  # here proxying Fuseki. Landing page /, endpoint /sparql, GraphQL /graphql.
   rpt:
     profiles: [rpt]
     image: aksw/rpt:2.0.0-rc7
@@ -712,7 +717,7 @@ services:
     ports:
       - "${RPT_PORT:-8642}:8642"
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8642/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8642/sparql?query=ASK%7B%7D"]
       interval: 10s
       timeout: 5s
       retries: 18
@@ -797,7 +802,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xmx1g"
     volumes:
       - ./itb:/validator/resources:ro
-      - ./data/sample/shapes.ttl:/validator/resources/stack/shapes/shapes.ttl:ro
+      - ./data/sample:/validator/resources/stack/shapes:ro   # shapes.ttl (the whole dir: a file can't be mounted inside a read-only mount)
     ports:
       - "${ITB_SHACL_PORT:-8097}:8080"
 
