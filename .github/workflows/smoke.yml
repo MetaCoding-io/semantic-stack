@@ -184,7 +184,8 @@ jobs:
       - name: WIDOCO documents the vocabulary
         run: |
           docker compose --profile tools run --rm widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en
-          ls data/out/widoco/ && test -s "$(ls data/out/widoco/index*.html | head -1)"
+          # a slash ontology IRI (http://localhost:8084/vocab/) makes WIDOCO write into a doc/ subfolder
+          ls data/out/widoco/doc/ && test -s "$(ls data/out/widoco/doc/index*.html | head -1)"
       - name: RPT runs a SPARQL file over the sample data
         run: docker compose --profile tools run --rm rpt-cli integrate sample/semantic-stack.ttl queries/01-services-by-category.rq | tee /dev/stderr | grep -q Fuseki
 

@@ -442,7 +442,8 @@ services:
 
   # WIDOCO: wizard-style HTML documentation (+ WebVOWL view) for an ontology. One-shot CLI.
   #   docker compose --profile tools run --rm widoco -ontFile data/sample/semantic-stack-vocab.ttl -outFolder data/out/widoco -rewriteAll -webVowl -uniteSections -lang en
-  # Output: data/out/widoco/ (browse it at http://localhost:8080/data/out/widoco/).
+  # Output: data/out/widoco/doc/ for a slash ontology IRI like the sample vocabulary
+  # (browse it at http://localhost:8080/data/out/widoco/doc/).
   widoco:
     profiles: [tools]
     image: ghcr.io/dgarijo/widoco:v1.4.25
