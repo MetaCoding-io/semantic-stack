@@ -1,0 +1,21 @@
+[PrefixDeclaration]
+svc:		http://localhost:8084/service/
+cat:		http://localhost:8084/category/
+ss:		http://localhost:8084/vocab/
+schema:		http://schema.org/
+xsd:		http://www.w3.org/2001/XMLSchema#
+rdf:		http://www.w3.org/1999/02/22-rdf-syntax-ns#
+
+[MappingDeclaration] @collection [[
+mappingId	service
+target		svc:{slug} a ss:Service ; schema:name {name}^^xsd:string ; schema:description {description}^^xsd:string ; ss:port {port}^^xsd:integer ; ss:language {language}^^xsd:string ; ss:category cat:{category} .
+source		SELECT slug, name, description, port, language, category FROM service
+
+mappingId	category
+target		cat:{slug} a ss:Category ; schema:name {name}^^xsd:string .
+source		SELECT slug, name FROM category
+
+mappingId	depends_on
+target		svc:{service} ss:dependsOn svc:{depends_on} .
+source		SELECT service, depends_on FROM dependency
+]]

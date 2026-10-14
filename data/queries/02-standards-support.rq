@@ -1,0 +1,9 @@
+# Sample data: which services implement which W3C/community standards.
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?standard (GROUP_CONCAT(?service; separator=", ") AS ?services) WHERE {
+  ?s a ss:Service ; schema:name ?service ; ss:implements/schema:name ?standard .
+}
+GROUP BY ?standard
+ORDER BY DESC(COUNT(?service))

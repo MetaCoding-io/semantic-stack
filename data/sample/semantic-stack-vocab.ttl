@@ -1,0 +1,74 @@
+# Tiny vocabulary used by data/sample/semantic-stack.ttl. Doubles as the demo input for
+# WebVOWL (visualise it), pyLODE (document it) and Ontop (ontology for the virtual graph).
+@prefix ss:     <http://localhost:8084/vocab/> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <http://schema.org/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+<http://localhost:8084/vocab/> a owl:Ontology ;
+    dcterms:title "Semantic Stack vocabulary"@en ;
+    dcterms:description "Describes the services, categories and standards that make up a semantic web stack."@en ;
+    dcterms:creator <https://metacoding.io> ;
+    owl:versionInfo "0.1.0" .
+
+ss:Service a owl:Class ;
+    rdfs:label "Service"@en ;
+    rdfs:comment "A deployable component of the stack, usually one container."@en .
+
+ss:Category a owl:Class ;
+    rdfs:label "Category"@en ;
+    rdfs:comment "What kind of job a service does."@en .
+
+ss:Standard a owl:Class ;
+    rdfs:label "Standard"@en ;
+    rdfs:comment "A specification a service implements."@en .
+
+ss:port a owl:DatatypeProperty ;
+    rdfs:label "host port"@en ;
+    rdfs:comment "TCP port the service is published on by compose.yml."@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range xsd:integer .
+
+ss:category a owl:ObjectProperty ;
+    rdfs:label "category"@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range ss:Category .
+
+ss:implements a owl:ObjectProperty ;
+    rdfs:label "implements"@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range ss:Standard .
+
+ss:dependsOn a owl:ObjectProperty ;
+    rdfs:label "depends on"@en ;
+    rdfs:comment "Needs the other service to be useful."@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range ss:Service .
+
+ss:maintainedBy a owl:ObjectProperty ;
+    rdfs:label "maintained by"@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range schema:Organization .
+
+ss:dockerImage a owl:DatatypeProperty ;
+    rdfs:label "docker image"@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range xsd:string .
+
+ss:language a owl:DatatypeProperty ;
+    rdfs:label "implementation language"@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range xsd:string .
+
+ss:optional a owl:DatatypeProperty ;
+    rdfs:label "optional"@en ;
+    rdfs:comment "True when the service lives behind a compose profile or override file."@en ;
+    rdfs:domain ss:Service ;
+    rdfs:range xsd:boolean .
+
+ss:publishedYear a owl:DatatypeProperty ;
+    rdfs:label "published year"@en ;
+    rdfs:domain ss:Standard ;
+    rdfs:range xsd:integer .

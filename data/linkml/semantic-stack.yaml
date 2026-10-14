@@ -1,0 +1,90 @@
+# LinkML schema for the sample model. LinkML is a YAML modelling language that generates
+# OWL, SHACL, JSON Schema, Pydantic, SQL and more from one source:
+#   docker compose --profile tools run --rm tools gen-owl    linkml/semantic-stack.yaml > out/semantic-stack.owl.ttl
+#   docker compose --profile tools run --rm tools gen-shacl  linkml/semantic-stack.yaml > out/semantic-stack.shacl.ttl
+#   docker compose --profile tools run --rm tools gen-json-schema linkml/semantic-stack.yaml > out/semantic-stack.schema.json
+#   docker compose --profile tools run --rm tools gen-pydantic linkml/semantic-stack.yaml > out/semantic_stack.py
+id: http://localhost:8084/linkml/semantic-stack
+name: semantic_stack
+title: Semantic Stack
+description: Services, categories and standards that make up a semantic web stack.
+license: https://www.apache.org/licenses/LICENSE-2.0
+version: 0.1.0
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  ss: http://localhost:8084/vocab/
+  schema: http://schema.org/
+  xsd: http://www.w3.org/2001/XMLSchema#
+default_prefix: ss
+default_range: string
+
+imports:
+  - linkml:types
+
+slots:
+  id:
+    identifier: true
+    range: uriorcurie
+    description: IRI of the resource.
+
+classes:
+  Service:
+    class_uri: ss:Service
+    description: A deployable component of the stack, usually one container.
+    slots: [id]
+    attributes:
+      name:
+        slot_uri: schema:name
+        required: true
+      description:
+        slot_uri: schema:description
+      port:
+        slot_uri: ss:port
+        range: integer
+        minimum_value: 1
+        maximum_value: 65535
+      category:
+        slot_uri: ss:category
+        range: Category
+        multivalued: true
+        required: true
+      implements:
+        slot_uri: ss:implements
+        range: Standard
+        multivalued: true
+      depends_on:
+        slot_uri: ss:dependsOn
+        range: Service
+        multivalued: true
+      docker_image:
+        slot_uri: ss:dockerImage
+      language:
+        slot_uri: ss:language
+      optional:
+        slot_uri: ss:optional
+        range: boolean
+
+  Category:
+    class_uri: ss:Category
+    description: What kind of job a service does.
+    slots: [id]
+    attributes:
+      name:
+        slot_uri: schema:name
+        required: true
+
+  Standard:
+    class_uri: ss:Standard
+    description: A specification a service implements.
+    slots: [id]
+    attributes:
+      name:
+        slot_uri: schema:name
+        required: true
+      url:
+        slot_uri: schema:url
+        range: uri
+      published_year:
+        slot_uri: ss:publishedYear
+        range: integer

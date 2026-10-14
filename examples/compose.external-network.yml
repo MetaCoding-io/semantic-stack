@@ -1,0 +1,21 @@
+# Example override: attach the stack to a network owned by another compose project
+# (for instance a monorepo whose services need to reach qlever/fuseki by name).
+#
+#   docker compose -f compose.yml -f examples/compose.external-network.yml up -d
+#
+# Compose merges `networks`, so services stay on the default network *and* join the external one.
+# Rename `monorepo_default` to whatever `docker network ls` shows for your other project.
+services:
+  qlever:
+    networks: [default, shared]
+  fuseki:
+    networks: [default, shared]
+  trifid:
+    networks: [default, shared]
+  comunica:
+    networks: [default, shared]
+
+networks:
+  shared:
+    name: monorepo_default
+    external: true

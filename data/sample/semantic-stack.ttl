@@ -1,0 +1,219 @@
+# Sample dataset: the semantic stack describing itself.
+# IRIs are minted under http://localhost:8084/ so that Trifid (port 8084) can dereference them
+# when it points at a store holding this file, e.g. http://localhost:8084/service/fuseki
+@prefix svc:     <http://localhost:8084/service/> .
+@prefix cat:     <http://localhost:8084/category/> .
+@prefix std:     <http://localhost:8084/standard/> .
+@prefix org:     <http://localhost:8084/org/> .
+@prefix ss:      <http://localhost:8084/vocab/> .
+@prefix schema:  <http://schema.org/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# ---- categories -------------------------------------------------------------
+cat:triple-store     a ss:Category ; schema:name "Triple store"@en ; schema:description "Stores RDF and answers SPARQL."@en .
+cat:transformation   a ss:Category ; schema:name "Data transformation"@en ; schema:description "Turns tables, JSON and XML into RDF."@en .
+cat:visualisation    a ss:Category ; schema:name "Visualisation and browsing"@en .
+cat:query            a ss:Category ; schema:name "Query tooling"@en .
+cat:validation       a ss:Category ; schema:name "Validation and modelling"@en .
+cat:virtualisation   a ss:Category ; schema:name "Virtual knowledge graphs"@en .
+
+# ---- standards --------------------------------------------------------------
+std:sparql-1.1 a ss:Standard ; schema:name "SPARQL 1.1" ; schema:url <https://www.w3.org/TR/sparql11-overview/> ; ss:publishedYear 2013 .
+std:sparql-1.2 a ss:Standard ; schema:name "SPARQL 1.2" ; schema:url <https://www.w3.org/TR/sparql12-query/> ; ss:publishedYear 2025 .
+std:rdf-1.2    a ss:Standard ; schema:name "RDF 1.2" ; schema:url <https://www.w3.org/TR/rdf12-concepts/> ; ss:publishedYear 2025 .
+std:shacl      a ss:Standard ; schema:name "SHACL" ; schema:url <https://www.w3.org/TR/shacl/> ; ss:publishedYear 2017 .
+std:owl-2      a ss:Standard ; schema:name "OWL 2" ; schema:url <https://www.w3.org/TR/owl2-overview/> ; ss:publishedYear 2012 .
+std:rml        a ss:Standard ; schema:name "RML" ; schema:url <https://rml.io/specs/rml/> ; ss:publishedYear 2014 .
+std:r2rml      a ss:Standard ; schema:name "R2RML" ; schema:url <https://www.w3.org/TR/r2rml/> ; ss:publishedYear 2012 .
+std:gsp        a ss:Standard ; schema:name "SPARQL 1.1 Graph Store HTTP Protocol" ; schema:url <https://www.w3.org/TR/sparql11-http-rdf-update/> ; ss:publishedYear 2013 .
+std:vowl       a ss:Standard ; schema:name "VOWL" ; schema:url <http://vowl.visualdataweb.org/v2/> ; ss:publishedYear 2016 .
+std:linkml     a ss:Standard ; schema:name "LinkML" ; schema:url <https://linkml.io/> ; ss:publishedYear 2021 .
+
+# ---- organisations ----------------------------------------------------------
+org:apache      a schema:Organization ; schema:name "Apache Software Foundation" ; schema:url <https://www.apache.org/> .
+org:eclipse     a schema:Organization ; schema:name "Eclipse Foundation" ; schema:url <https://www.eclipse.org/> .
+org:uni-freiburg a schema:Organization ; schema:name "University of Freiburg, Algorithms and Data Structures" ; schema:url <https://ad.informatik.uni-freiburg.de/> .
+org:zazuko      a schema:Organization ; schema:name "Zazuko" ; schema:url <https://zazuko.com/> .
+org:ontotext    a schema:Organization ; schema:name "Ontotext" ; schema:url <https://www.ontotext.com/> .
+org:imec        a schema:Organization ; schema:name "IDLab, Ghent University - imec" ; schema:url <https://rml.io/> .
+org:comunica    a schema:Organization ; schema:name "Comunica Association" ; schema:url <https://comunica.dev/> .
+org:openrefine  a schema:Organization ; schema:name "OpenRefine contributors" ; schema:url <https://openrefine.org/> .
+org:oxigraph    a schema:Organization ; schema:name "Oxigraph contributors" ; schema:url <https://github.com/oxigraph/oxigraph> .
+org:ontop       a schema:Organization ; schema:name "Ontop developers, Free University of Bozen-Bolzano" ; schema:url <https://ontop-vkg.org/> .
+org:visualdataweb a schema:Organization ; schema:name "VisualDataWeb" ; schema:url <http://visualdataweb.org/> .
+org:metacoding  a schema:Organization ; schema:name "MetaCoding" ; schema:url <https://metacoding.io> .
+
+# ---- services ---------------------------------------------------------------
+svc:qlever a ss:Service ;
+    schema:name "QLever" ;
+    schema:description "Very fast SPARQL engine for large, read-mostly graphs. Primary store of the default stack."@en ;
+    schema:url <https://github.com/ad-freiburg/qlever> ;
+    ss:port 7001 ;
+    ss:category cat:triple-store ;
+    ss:implements std:sparql-1.1 ;
+    ss:dockerImage "adfreiburg/qlever" ;
+    ss:maintainedBy org:uni-freiburg ;
+    ss:language "C++" ;
+    schema:license <https://www.apache.org/licenses/LICENSE-2.0> .
+
+svc:qlever-ui a ss:Service ;
+    schema:name "QLever UI" ;
+    schema:description "Query editor with autocompletion for QLever."@en ;
+    schema:url <https://github.com/ad-freiburg/qlever-ui> ;
+    ss:port 7000 ;
+    ss:category cat:query ;
+    ss:dependsOn svc:qlever ;
+    ss:dockerImage "adfreiburg/qlever-ui" ;
+    ss:maintainedBy org:uni-freiburg ;
+    ss:language "Python" .
+
+svc:fuseki a ss:Service ;
+    schema:name "Apache Jena Fuseki" ;
+    schema:description "General-purpose SPARQL server: query, update, Graph Store Protocol, SHACL, text index."@en ;
+    schema:url <https://jena.apache.org/documentation/fuseki2/> ;
+    ss:port 3030 ;
+    ss:category cat:triple-store ;
+    ss:implements std:sparql-1.1, std:sparql-1.2, std:rdf-1.2, std:shacl, std:gsp ;
+    ss:dockerImage "secoresearch/fuseki" ;
+    ss:maintainedBy org:apache ;
+    ss:language "Java" ;
+    schema:license <https://www.apache.org/licenses/LICENSE-2.0> .
+
+svc:oxigraph a ss:Service ;
+    schema:name "Oxigraph" ;
+    schema:description "Lightweight Rust store with no setup step; alternative primary store."@en ;
+    schema:url <https://github.com/oxigraph/oxigraph> ;
+    ss:port 7878 ;
+    ss:category cat:triple-store ;
+    ss:implements std:sparql-1.1, std:sparql-1.2, std:rdf-1.2, std:gsp ;
+    ss:dockerImage "oxigraph/oxigraph" ;
+    ss:maintainedBy org:oxigraph ;
+    ss:language "Rust" ;
+    ss:optional true .
+
+svc:graphdb a ss:Service ;
+    schema:name "GraphDB" ;
+    schema:description "Enterprise RDF database (Free edition). Optional profile."@en ;
+    schema:url <https://graphdb.ontotext.com/> ;
+    ss:port 7200 ;
+    ss:category cat:triple-store ;
+    ss:implements std:sparql-1.1, std:shacl, std:gsp ;
+    ss:dockerImage "ontotext/graphdb" ;
+    ss:maintainedBy org:ontotext ;
+    ss:language "Java" ;
+    ss:optional true .
+
+svc:rdf4j a ss:Service ;
+    schema:name "RDF4J Workbench" ;
+    schema:description "Repository manager and query UI; can proxy any SPARQL endpoint in the stack."@en ;
+    schema:url <https://rdf4j.org/> ;
+    ss:port 8082 ;
+    ss:category cat:query ;
+    ss:implements std:sparql-1.1 ;
+    ss:dockerImage "eclipse/rdf4j-workbench" ;
+    ss:maintainedBy org:eclipse ;
+    ss:language "Java" .
+
+svc:openrefine a ss:Service ;
+    schema:name "OpenRefine" ;
+    schema:description "Interactive data cleaning and reconciliation."@en ;
+    schema:url <https://openrefine.org/> ;
+    ss:port 3333 ;
+    ss:category cat:transformation ;
+    ss:maintainedBy org:openrefine ;
+    ss:language "Java" .
+
+svc:rmlmapper a ss:Service ;
+    schema:name "RMLMapper" ;
+    schema:description "Executes RML mappings to turn CSV, JSON and XML into RDF."@en ;
+    schema:url <https://github.com/RMLio/rmlmapper-java> ;
+    ss:category cat:transformation ;
+    ss:implements std:rml, std:r2rml ;
+    ss:dockerImage "rmlio/rmlmapper-java" ;
+    ss:maintainedBy org:imec ;
+    ss:language "Java" .
+
+svc:yarrrml a ss:Service ;
+    schema:name "YARRRML parser" ;
+    schema:description "Compiles human-friendly YAML mappings into RML."@en ;
+    schema:url <https://rml.io/yarrrml/> ;
+    ss:category cat:transformation ;
+    ss:implements std:rml ;
+    ss:dependsOn svc:rmlmapper ;
+    ss:dockerImage "rmlio/yarrrml-parser" ;
+    ss:maintainedBy org:imec ;
+    ss:language "JavaScript" .
+
+svc:webvowl a ss:Service ;
+    schema:name "WebVOWL" ;
+    schema:description "Interactive OWL ontology visualisation with the OWL2VOWL converter."@en ;
+    schema:url <https://github.com/VisualDataWeb/WebVOWL> ;
+    ss:port 8083 ;
+    ss:category cat:visualisation ;
+    ss:implements std:vowl, std:owl-2 ;
+    ss:maintainedBy org:visualdataweb ;
+    ss:language "JavaScript" .
+
+svc:trifid a ss:Service ;
+    schema:name "Trifid" ;
+    schema:description "Linked Data frontend: dereferenceable IRIs, YASGUI console, Graph Explorer, SPARQL proxy."@en ;
+    schema:url <https://github.com/zazuko/trifid> ;
+    ss:port 8084 ;
+    ss:category cat:visualisation ;
+    ss:dependsOn svc:qlever ;
+    ss:dockerImage "ghcr.io/zazuko/trifid" ;
+    ss:maintainedBy org:zazuko ;
+    ss:language "JavaScript" .
+
+svc:blueprint a ss:Service ;
+    schema:name "Blueprint" ;
+    schema:description "Knowledge-graph browser driven by a configuration graph."@en ;
+    schema:url <https://github.com/zazuko/blueprint> ;
+    ss:port 8085 ;
+    ss:category cat:visualisation ;
+    ss:dependsOn svc:trifid ;
+    ss:dockerImage "ghcr.io/zazuko/blueprint" ;
+    ss:maintainedBy org:zazuko ;
+    ss:language "TypeScript" .
+
+svc:comunica a ss:Service ;
+    schema:name "Comunica" ;
+    schema:description "Federated SPARQL endpoint over every store in the stack."@en ;
+    schema:url <https://comunica.dev/> ;
+    ss:port 8087 ;
+    ss:category cat:query ;
+    ss:implements std:sparql-1.1, std:sparql-1.2 ;
+    ss:dependsOn svc:qlever, svc:fuseki ;
+    ss:dockerImage "comunica/query-sparql" ;
+    ss:maintainedBy org:comunica ;
+    ss:language "TypeScript" .
+
+svc:ontop a ss:Service ;
+    schema:name "Ontop" ;
+    schema:description "Virtual knowledge graph: SPARQL over a relational database via R2RML/OBDA mappings."@en ;
+    schema:url <https://ontop-vkg.org/> ;
+    ss:port 8089 ;
+    ss:category cat:virtualisation ;
+    ss:implements std:sparql-1.1, std:r2rml, std:owl-2 ;
+    ss:dockerImage "ontop/ontop" ;
+    ss:maintainedBy org:ontop ;
+    ss:language "Java" ;
+    ss:optional true .
+
+svc:tools a ss:Service ;
+    schema:name "Python toolbox" ;
+    schema:description "rdflib, pySHACL, OWL-RL, LinkML, pyLODE and JupyterLab in one container."@en ;
+    ss:category cat:validation ;
+    ss:implements std:shacl, std:linkml, std:owl-2 ;
+    ss:maintainedBy org:metacoding ;
+    ss:language "Python" ;
+    ss:optional true .
+
+svc:landing a ss:Service ;
+    schema:name "Landing page" ;
+    schema:description "Static index of every service with live reachability checks."@en ;
+    ss:port 8080 ;
+    ss:category cat:visualisation ;
+    ss:maintainedBy org:metacoding .

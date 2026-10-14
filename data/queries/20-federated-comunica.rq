@@ -1,0 +1,3 @@
+# Federated (Comunica, http://localhost:8087/sparql): one query over both stores.
+# Comunica unions the sources, so this counts triples across QLever and Fuseki together.
+SELECT (COUNT(*) AS ?triples) WHERE { ?s ?p ?o }

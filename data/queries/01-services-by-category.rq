@@ -1,0 +1,11 @@
+# Sample data (Fuseki/Oxigraph): every service grouped by category, with its port.
+PREFIX ss:     <http://localhost:8084/vocab/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?category ?service ?port WHERE {
+  ?s a ss:Service ;
+     schema:name ?service ;
+     ss:category/schema:name ?category .
+  OPTIONAL { ?s ss:port ?port }
+}
+ORDER BY ?category ?service
