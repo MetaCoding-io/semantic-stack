@@ -162,12 +162,14 @@ services:
   # Open it through the landing page (or the README link): the Workbench runs inside the container and
   # resolves its server from the browser's host header, so http://localhost:8082/rdf4j-workbench/ makes
   # it dial localhost:8082 *inside* the container and fail. The link passes
-  # ?workbench-server=http://localhost:8080/rdf4j-server once; the choice is kept in a cookie.
+  # ?workbench-server=http://127.0.0.1:8080/rdf4j-server once (the choice is kept in a cookie); the
+  # accepted-server-prefixes property below is what lets the Workbench accept that URL, since by default
+  # it only trusts same-origin /rdf4j-server.
   rdf4j:
     image: eclipse/rdf4j-workbench:6.1.0-tomcat
     <<: *restart
     environment:
-      JAVA_OPTS: "-Xms256m -Xmx1g"
+      JAVA_OPTS: "-Xms256m -Xmx1g -Dorg.eclipse.rdf4j.workbench.accepted-server-prefixes=http://127.0.0.1:8080/rdf4j-server"
     volumes:
       - rdf4j_data:/var/rdf4j
     ports:
