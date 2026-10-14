@@ -24,10 +24,9 @@ x-restart: &restart
 x-qlever: &qlever
   image: adfreiburg/qlever:commit-9541c1975c   # QLever publishes no release tags; bump the commit tag deliberately
   working_dir: /data
-  environment:
-    # The entrypoint re-maps its internal user to these ids so files in ./qlever end up owned by you.
-    UID: "${QLEVER_UID:-1000}"
-    GID: "${QLEVER_GID:-1000}"
+  # Run as your host ids so the index files written to ./qlever are owned by you (the image's
+  # entrypoint supports an arbitrary uid; see `docker run adfreiburg/qlever` for its help text).
+  user: "${QLEVER_UID:-1000}:${QLEVER_GID:-1000}"
   volumes:
     - ./qlever:/data
 
