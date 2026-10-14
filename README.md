@@ -2,6 +2,8 @@
 
 A Docker-based semantic web technology stack for working with RDF data, ontologies, SPARQL querying, and linked data.
 
+A [MetaCoding](https://metacoding.io) project: the local stack behind our data-centric consulting work and the one [SemanticSeams](https://github.com/MetaCoding-io/SemanticSeams) is developed against. One `docker compose up` gives you two SPARQL stores, data transformation, ontology visualization, a Linked Data browser and a federated query engine, each on its own port.
+
 ## Services
 
 ### Triple Stores
@@ -137,3 +139,12 @@ A commented-out service definition is included in `docker-compose.yml` for refer
 ## TODOs
 
 - Fork https://github.com/VisualDataWeb/WebVOWL/ with proper URL
+
+## Related
+
+- [SemanticSeams](https://github.com/MetaCoding-io/SemanticSeams) — a zoomable, multi-notation application graph over RDF; this stack is its development environment.
+- [MetaCoding](https://metacoding.io) — the data-centric consultancy behind both.
+
+## License
+
+[Apache-2.0](LICENSE) for the compose files and documentation in this repository. The bundled services and the submodules carry their own licenses.
