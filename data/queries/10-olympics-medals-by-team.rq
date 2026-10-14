@@ -1,0 +1,15 @@
+# Olympics demo (QLever, http://localhost:7001): gold medals per team, all time.
+PREFIX olympics: <http://wallscope.co.uk/ontology/olympics/>
+PREFIX medal:    <http://wallscope.co.uk/resource/olympics/medal/>
+PREFIX dbo:      <http://dbpedia.org/ontology/>
+PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?team (COUNT(?result) AS ?gold) WHERE {
+  ?result olympics:medal medal:Gold ;
+          olympics:athlete ?athlete .
+  ?athlete dbo:team ?t .
+  ?t rdfs:label ?team .
+}
+GROUP BY ?team
+ORDER BY DESC(?gold)
+LIMIT 20

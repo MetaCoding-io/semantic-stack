@@ -1,0 +1,51 @@
+# SHACL shapes for data/sample/semantic-stack.ttl.
+#   docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
+#   curl -X POST -H 'Content-Type: text/turtle' --data-binary @data/sample/shapes.ttl 'http://localhost:3030/ds/shacl?graph=http://localhost:8084/graph/semantic-stack'
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix ss:     <http://localhost:8084/vocab/> .
+@prefix schema: <http://schema.org/> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix shp:    <http://localhost:8084/shapes/> .
+
+shp:ServiceShape a sh:NodeShape ;
+    sh:targetClass ss:Service ;
+    sh:property [
+        sh:path schema:name ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "Every service needs exactly one schema:name."
+    ] ;
+    sh:property [
+        sh:path ss:port ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ; sh:maxInclusive 65535 ;
+        sh:message "ss:port must be a single integer between 1 and 65535."
+    ] ;
+    sh:property [
+        sh:path ss:category ;
+        sh:minCount 1 ;
+        sh:class ss:Category ;
+        sh:message "Every service belongs to at least one ss:Category."
+    ] ;
+    sh:property [
+        sh:path ss:dependsOn ;
+        sh:class ss:Service
+    ] ;
+    sh:property [
+        sh:path schema:url ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI
+    ] .
+
+shp:StandardShape a sh:NodeShape ;
+    sh:targetClass ss:Standard ;
+    sh:property [
+        sh:path schema:name ;
+        sh:minCount 1 ; sh:maxCount 1
+    ] ;
+    sh:property [
+        sh:path schema:url ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI
+    ] .

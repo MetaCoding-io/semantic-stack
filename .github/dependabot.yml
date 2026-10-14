@@ -1,0 +1,33 @@
+# Keeps every pinned image, Python package and Action current. Review the PRs, run the smoke
+# workflow, merge. Dependabot has supported docker-compose files since February 2025.
+version: 2
+updates:
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      compose-images:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories:
+      - /openrefine
+      - /webvowl
+      - /tools
+      - /ontop
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /tools
+    schedule:
+      interval: weekly
+    groups:
+      python-tools:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

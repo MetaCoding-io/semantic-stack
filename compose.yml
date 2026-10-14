@@ -1,0 +1,324 @@
+# semantic-stack: a turnkey semantic-web / knowledge-graph stack.
+#
+#   docker compose --profile setup run --rm qlever-index   # one-time: build the QLever index (Olympics demo data)
+#   docker compose up -d                                   # start everything
+#   ./scripts/load.sh                                      # load data/sample into Fuseki
+#   open http://localhost:8080                             # landing page linking every service
+#
+# Variants (override files, see README):
+#   docker compose -f compose.yml -f compose.oxigraph.yml up -d   # Oxigraph as primary store (no indexing step)
+#   docker compose -f compose.yml -f compose.fuseki.yml   up -d   # Fuseki as primary store
+#
+# Optional profiles: setup (QLever indexing), tools (CLI tools), jupyter, ontop, graphdb
+#
+# URL rule of thumb: anything a *browser* loads (Blueprint, the QLever UI backend setting)
+# must use localhost:<host port>; anything a *container* calls (Trifid, Comunica) uses the
+# service name and the container port. Mixing these up is the number one cause of
+# "it starts but nothing works".
+
+name: semantic-stack
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-qlever: &qlever
+  image: adfreiburg/qlever:commit-9541c1975c   # QLever publishes no release tags; bump the commit tag deliberately
+  working_dir: /data
+  # Run as your host ids so the index files written to ./qlever are owned by you (the image's
+  # entrypoint supports an arbitrary uid; see `docker run adfreiburg/qlever` for its help text).
+  user: "${QLEVER_UID:-1000}:${QLEVER_GID:-1000}"
+  volumes:
+    - ./qlever:/data
+
+services:
+  # ---------------------------------------------------------------- landing page
+  landing:
+    image: nginx:1.29-alpine
+    <<: *restart
+    volumes:
+      - ./landing:/usr/share/nginx/html:ro
+    ports:
+      - "${LANDING_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------- triple stores
+  # QLever: very fast read-mostly SPARQL engine (Wikidata scale). Needs a one-time index
+  # build (see the qlever-index service). SPARQL endpoint: http://qlever:7001 (POST or GET ?query=).
+  # The server is API-only; the UI is the separate qlever-ui service.
+  qlever:
+    <<: [*qlever, *restart]
+    command:
+      - -c
+      - |
+        if ! ls ./*.index.* >/dev/null 2>&1; then
+          echo 'QLever: no index found in ./qlever. Build one first:'
+          echo '  docker compose --profile setup run --rm qlever-index'
+          sleep 30
+          exit 1
+        fi
+        exec qlever start --run-in-foreground
+    ports:
+      - "${QLEVER_PORT:-7001}:7001"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7001/?query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D%20LIMIT%201"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # One-shot job: download the demo dataset named in qlever/Qleverfile and build the index.
+  # Re-run after editing qlever/Qleverfile to index your own data.
+  qlever-index:
+    <<: *qlever
+    profiles: [setup]
+    command:
+      - -c
+      - qlever get-data && qlever index --overwrite-existing
+
+  # QLever UI (Django app). The backend URL is what the *browser* calls, hence localhost.
+  qlever-ui:
+    image: adfreiburg/qlever-ui:latest   # upstream publishes no version tags
+    <<: *restart
+    environment:
+      QLEVER_UI_BACKEND_SLUG: olympics
+      QLEVER_UI_BACKEND_URL: "http://localhost:${QLEVER_PORT:-7001}"
+    volumes:
+      - ./qlever-ui/configure-and-run.sh:/configure-and-run.sh:ro
+    command: ["bash", "/configure-and-run.sh"]
+    ports:
+      - "${QLEVER_UI_PORT:-7000}:7000"
+
+  # Apache Jena Fuseki: the general-purpose store. SPARQL 1.1 Query + Update, Graph Store
+  # Protocol, SHACL endpoint, Lucene text index, TDB persistence.
+  #   query:  http://fuseki:3030/ds/sparql     update: http://fuseki:3030/ds/update
+  #   data:   http://fuseki:3030/ds/data       shacl:  http://fuseki:3030/ds/shacl
+  # Note: the dataset uses unionDefaultGraph, so load data into a *named* graph
+  # (scripts/load.sh does) or it will not show up in default-graph queries.
+  fuseki:
+    image: secoresearch/fuseki:6.2.0
+    <<: *restart
+    environment:
+      ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-admin}
+      ENABLE_DATA_WRITE: "true"
+      ENABLE_UPDATE: "true"
+      ENABLE_SHACL: "true"
+      QUERY_TIMEOUT: "60000"
+    volumes:
+      - fuseki_data:/fuseki-base/databases
+      - ./data:/data:ro   # lets you run Jena CLI tools, e.g. docker compose exec fuseki /jena/bin/riot --validate /data/sample/semantic-stack.ttl
+    ports:
+      - "${FUSEKI_PORT:-3030}:3030"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3030/ds/sparql?query=ASK%7B%7D"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  # ---------------------------------------------------------------- repository management
+  # RDF4J Server + Workbench. Add your stores under Repositories > New > "SPARQL endpoint proxy"
+  # using container URLs such as http://qlever:7001 or http://fuseki:3030/ds/sparql.
+  rdf4j:
+    image: eclipse/rdf4j-workbench:6.1.0-tomcat
+    <<: *restart
+    environment:
+      JAVA_OPTS: "-Xms256m -Xmx1g"
+    volumes:
+      - rdf4j_data:/var/rdf4j
+    ports:
+      - "${RDF4J_PORT:-8082}:8080"
+
+  # ---------------------------------------------------------------- data transformation
+  # OpenRefine, built from the official release tarball (there is no official image).
+  openrefine:
+    build: ./openrefine
+    image: ghcr.io/metacoding-io/semantic-stack-openrefine:3.10.0
+    <<: *restart
+    volumes:
+      - openrefine_data:/data
+      - ./data:/import:ro
+    ports:
+      - "${OPENREFINE_PORT:-3333}:3333"
+
+  # RML Mapper: CSV/JSON/XML -> RDF. One-shot CLI, see data/rml/README.md.
+  #   docker compose --profile tools run --rm rmlmapper -m /data/rml/mapping.rml.ttl -o /data/rml/output.ttl -s turtle
+  rmlmapper:
+    profiles: [tools]
+    image: rmlio/rmlmapper-java:v8.0.1
+    volumes:
+      - ./data:/data
+
+  # YARRRML parser: human-friendly YAML mappings -> RML.
+  #   docker compose --profile tools run --rm yarrrml -i /data/rml/mapping.yarrrml.yml -o /data/rml/mapping.rml.ttl
+  yarrrml:
+    profiles: [tools]
+    image: rmlio/yarrrml-parser:1.11.0
+    volumes:
+      - ./data:/data
+
+  # ---------------------------------------------------------------- visualisation & browsing
+  # WebVOWL + OWL2VOWL converter, built from upstream source (the old war download is gone).
+  # First build takes a few minutes; `docker compose pull webvowl` fetches the prebuilt image instead.
+  webvowl:
+    build: ./webvowl
+    image: ghcr.io/metacoding-io/semantic-stack-webvowl:1.1.7
+    <<: *restart
+    volumes:
+      - ./data:/data:ro
+    ports:
+      - "${WEBVOWL_PORT:-8083}:8080"
+
+  # Trifid (Zazuko): Linked Data frontend. Dereferences resource IRIs, ships a YASGUI SPARQL
+  # console at /sparql, Graph Explorer at /graph-explorer and a CORS-friendly proxy at /query.
+  # DATASET_BASE_URL makes http://localhost:8084/resource/... resolve IRIs minted under that base.
+  trifid:
+    image: ghcr.io/zazuko/trifid:v6
+    <<: *restart
+    environment:
+      SPARQL_ENDPOINT_URL: http://qlever:7001
+      DATASET_BASE_URL: http://wallscope.co.uk/   # base of the Olympics demo IRIs
+    ports:
+      - "${TRIFID_PORT:-8084}:8080"
+
+  # Blueprint (Zazuko): knowledge-graph browser. It is a browser app, so every URL below is
+  # what the *browser* calls. Blueprint shows nothing until a Blueprint configuration graph
+  # is loaded into the store; see https://github.com/zazuko/blueprint.
+  blueprint:
+    image: ghcr.io/zazuko/blueprint:v1
+    <<: *restart
+    environment:
+      ENDPOINT_URL: "http://localhost:${TRIFID_PORT:-8084}/query"
+      SPARQL_CONSOLE_URL: "http://localhost:${TRIFID_PORT:-8084}/sparql/#query"
+      GRAPH_EXPLORER_URL: "http://localhost:${TRIFID_PORT:-8084}/graph-explorer/?resource"
+      FULL_TEXT_SEARCH_DIALECT: qlever
+      SKIP_AUTHENTICATION: "true"
+      LINK_CONFIGURATION: app
+    ports:
+      - "${BLUEPRINT_PORT:-8085}:80"
+
+  # ---------------------------------------------------------------- federated querying
+  # Comunica as an HTTP SPARQL endpoint federating over every store in the stack.
+  #   http://localhost:8087/sparql?query=...
+  comunica:
+    image: comunica/query-sparql:v5.2.4
+    <<: *restart
+    entrypoint: ["node", "./bin/http.js"]
+    command:
+      - "-p"
+      - "8080"
+      - "sparql@http://qlever:7001"
+      - "sparql@http://fuseki:3030/ds/sparql"
+    ports:
+      - "${COMUNICA_PORT:-8087}:8080"
+
+  # ---------------------------------------------------------------- tools (profile: tools / jupyter)
+  # Python toolbox: rdflib, pySHACL, SPARQLWrapper, OWL-RL, LinkML, pyLODE, pandas.
+  #   docker compose --profile tools run --rm tools pyshacl -s sample/shapes.ttl sample/semantic-stack.ttl
+  #   docker compose --profile tools run --rm tools gen-owl linkml/semantic-stack.yaml
+  tools:
+    profiles: [tools]
+    build: ./tools
+    image: ghcr.io/metacoding-io/semantic-stack-tools:latest
+    working_dir: /data
+    environment:
+      FUSEKI_URL: http://fuseki:3030/ds/sparql
+      FUSEKI_UPDATE_URL: http://fuseki:3030/ds/update
+      QLEVER_URL: http://qlever:7001
+      OXIGRAPH_URL: http://oxigraph:7878/query
+    volumes:
+      - ./data:/data
+    command: ["bash"]
+
+  jupyter:
+    profiles: [jupyter]
+    build: ./tools
+    image: ghcr.io/metacoding-io/semantic-stack-tools:latest
+    <<: *restart
+    working_dir: /work
+    environment:
+      FUSEKI_URL: http://fuseki:3030/ds/sparql
+      QLEVER_URL: http://qlever:7001
+      OXIGRAPH_URL: http://oxigraph:7878/query
+    volumes:
+      - ./notebooks:/work
+      - ./data:/work/data
+    command:
+      - jupyter
+      - lab
+      - --ip=0.0.0.0
+      - --port=8888
+      - --no-browser
+      - --allow-root
+      - --ServerApp.token=
+      - --ServerApp.password=
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+
+  # ---------------------------------------------------------------- Ontop virtual knowledge graph (profile: ontop)
+  # Query a relational database as RDF without copying it. Demo: ontop/postgres/init.sql holds
+  # a table describing this stack; ontop/input/mapping.obda maps it to the same vocabulary as
+  # data/sample. SPARQL at http://localhost:8089/sparql, portal UI at http://localhost:8089/.
+  postgres:
+    profiles: [ontop]
+    image: postgres:17-alpine
+    <<: *restart
+    environment:
+      POSTGRES_USER: stack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stack}
+      POSTGRES_DB: stack
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ontop/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stack -d stack"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ontop:
+    profiles: [ontop]
+    build: ./ontop
+    image: ghcr.io/metacoding-io/semantic-stack-ontop:5.5.0
+    <<: *restart
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ONTOP_MAPPING_FILE: /opt/ontop/input/mapping.obda
+      ONTOP_ONTOLOGY_FILE: /opt/ontop/ontology/semantic-stack-vocab.ttl
+      ONTOP_PROPERTIES_FILE: /opt/ontop/input/ontop.properties
+      ONTOP_DB_URL: jdbc:postgresql://postgres:5432/stack
+      ONTOP_DB_USER: stack
+      ONTOP_DB_PASSWORD: ${POSTGRES_PASSWORD:-stack}
+      ONTOP_CORS_ALLOWED_ORIGINS: "*"
+      ONTOP_WAIT_FOR: postgres:5432
+    volumes:
+      - ./ontop/input:/opt/ontop/input:ro
+      - ./data/sample/semantic-stack-vocab.ttl:/opt/ontop/ontology/semantic-stack-vocab.ttl:ro
+    ports:
+      - "${ONTOP_PORT:-8089}:8080"
+
+  # ---------------------------------------------------------------- GraphDB (profile: graphdb)
+  # Ontotext GraphDB, the store most enterprise teams already run. Starts in Free mode; if it asks
+  # for a licence, request the free one from Ontotext and upload it in Setup > License.
+  graphdb:
+    profiles: [graphdb]
+    image: ontotext/graphdb:11.5.1
+    <<: *restart
+    environment:
+      GDB_JAVA_OPTS: "-Xms1g -Xmx2g"
+    volumes:
+      - graphdb_home:/opt/graphdb/home
+    ports:
+      - "${GRAPHDB_PORT:-7200}:7200"
+
+volumes:
+  fuseki_data:
+  rdf4j_data:
+  openrefine_data:
+  postgres_data:
+  graphdb_home:

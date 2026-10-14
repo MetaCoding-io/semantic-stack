@@ -1,0 +1,34 @@
+# Qleverfile for the QLever service in this stack (used by `qlever index` and `qlever start`).
+# Demo dataset: 120 years of Olympics, ~1.8M triples, from https://github.com/wallscope/olympics-rdf
+#
+# To index your own data: drop your .ttl/.nt files into ./qlever/, change NAME, INPUT_FILES and
+# CAT_INPUT_FILES below, remove GET_DATA_CMD, then run:
+#   docker compose --profile setup run --rm qlever-index && docker compose restart qlever qlever-ui
+# Full reference: https://github.com/qlever-dev/qlever-control
+
+[data]
+NAME              = olympics
+BASE_URL          = https://github.com/wallscope/olympics-rdf
+GET_DATA_CMD      = curl -sLo olympics.zip -C - ${BASE_URL}/raw/master/data/olympics-nt-nodup.zip && unzip -q -o olympics.zip && rm olympics.zip
+DESCRIPTION       = 120 Years of Olympics, data from ${BASE_URL}
+TEXT_DESCRIPTION  = All literals, search with FILTER CONTAINS(?var, "...")
+FORMAT            = nt
+
+[index]
+INPUT_FILES     = olympics.nt
+CAT_INPUT_FILES = cat ${INPUT_FILES}
+SETTINGS_JSON   = { "ascii-prefixes-only": false, "num-triples-per-batch": 100000 }
+
+[server]
+PORT               = 7001
+ACCESS_TOKEN       = ${data:NAME}_7643543846
+MEMORY_FOR_QUERIES = 2G
+CACHE_MAX_SIZE     = 1G
+TIMEOUT            = 60s
+
+[runtime]
+# The qlever CLI runs inside the adfreiburg/qlever container already, so run the binaries natively.
+SYSTEM = native
+
+[ui]
+UI_CONFIG = olympics
