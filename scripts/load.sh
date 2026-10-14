@@ -7,7 +7,8 @@
 #
 # Usage: scripts/load.sh [file.ttl ...]      (default: data/sample/*.ttl)
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
+# shellcheck source=/dev/null
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
 
 FUSEKI_URL="${FUSEKI_URL:-http://localhost:${FUSEKI_PORT:-3030}}"

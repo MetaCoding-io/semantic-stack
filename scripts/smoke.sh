@@ -6,7 +6,8 @@
 #   extra checks:   oxigraph ontop fuseki-data (sample data loaded) graphdb
 # Env: RETRIES (default 30), SLEEP seconds between retries (default 5), plus the *_PORT variables from .env.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
+# shellcheck source=/dev/null
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
 
 RETRIES="${RETRIES:-30}"

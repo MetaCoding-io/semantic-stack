@@ -290,7 +290,7 @@ services:
         condition: service_healthy
     environment:
       ONTOP_MAPPING_FILE: /opt/ontop/input/mapping.obda
-      ONTOP_ONTOLOGY_FILE: /opt/ontop/input/ontology.ttl
+      ONTOP_ONTOLOGY_FILE: /opt/ontop/ontology/semantic-stack-vocab.ttl
       ONTOP_PROPERTIES_FILE: /opt/ontop/input/ontop.properties
       ONTOP_DB_URL: jdbc:postgresql://postgres:5432/stack
       ONTOP_DB_USER: stack
@@ -299,7 +299,7 @@ services:
       ONTOP_WAIT_FOR: postgres:5432
     volumes:
       - ./ontop/input:/opt/ontop/input:ro
-      - ./data/sample/semantic-stack-vocab.ttl:/opt/ontop/input/ontology.ttl:ro
+      - ./data/sample/semantic-stack-vocab.ttl:/opt/ontop/ontology/semantic-stack-vocab.ttl:ro
     ports:
       - "${ONTOP_PORT:-8089}:8080"
 
