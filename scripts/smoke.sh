@@ -79,7 +79,7 @@ for c in "${checks[@]}"; do
     oxigraph)    sparql oxigraph    "$H:${OXIGRAPH_PORT:-7878}/query" ;;
     oxigraph-data) ask  oxigraph-data "$H:${OXIGRAPH_PORT:-7878}/query" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     rdf4j)       http   rdf4j       "$H:${RDF4J_PORT:-8082}/rdf4j-server/protocol" ;;
-    rdf4j-ui)    http   rdf4j-ui    "$H:${RDF4J_PORT:-8082}/rdf4j-workbench/repositories" ;;
+    rdf4j-ui)    http   rdf4j-ui    "$H:${RDF4J_PORT:-8082}/rdf4j-workbench/repositories/NONE/server?workbench-server=http://127.0.0.1:8080/rdf4j-server" "Repositories" ;;
     openrefine)  http   openrefine  "$H:${OPENREFINE_PORT:-3333}/" ;;
     webvowl)     http   webvowl     "$H:${WEBVOWL_PORT:-8083}/serverTimeStamp" ;;
     trifid)      http   trifid      "$H:${TRIFID_PORT:-8084}/sparql/" ;;
