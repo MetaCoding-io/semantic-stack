@@ -126,6 +126,8 @@ services:
   # Oxigraph (profile: oxigraph): lightweight Rust store with a built-in YASGUI at :7878.
   #   query: http://oxigraph:7878/query   update: /update   graph store: /store
   # --union-default-graph makes default-graph queries see every named graph, like Fuseki's dataset.
+  # No healthcheck: the image is distroless (no shell or curl), so wait for it from outside
+  # (`scripts/smoke.sh oxigraph`, which `make oxigraph-up` does) before loading data.
   oxigraph:
     profiles: [oxigraph]
     image: oxigraph/oxigraph:0.5.11

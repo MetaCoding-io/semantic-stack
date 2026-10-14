@@ -40,8 +40,9 @@ qlever-up: ## Add QLever + QLever UI (builds the index first if there is none)
 	@ls qlever/*.index.* >/dev/null 2>&1 || $(MAKE) qlever-index
 	$(COMPOSE) --profile qlever up -d
 
-oxigraph-up: ## Add Oxigraph on http://localhost:7878
+oxigraph-up: ## Add Oxigraph on http://localhost:7878 (waits until it answers, so `make load` can follow)
 	$(COMPOSE) --profile oxigraph up -d
+	./scripts/smoke.sh oxigraph
 
 tools: ## Open a shell in the Python tools container (rdflib, pySHACL, LinkML, pyLODE, jelly-cli)
 	$(COMPOSE) --profile tools run --rm tools
