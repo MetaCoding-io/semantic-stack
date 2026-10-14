@@ -447,6 +447,9 @@ services:
     profiles: [tools]
     image: ghcr.io/dgarijo/widoco:v1.4.25
     platform: linux/amd64   # upstream publishes amd64 only
+    # The image runs as its own unprivileged user, which can't create data/out/widoco once the other
+    # tools (which run as root) have created data/out; run as root like them, output ownership matches.
+    user: "0:0"
     environment:
       JAVA_OPTS: "-Xmx1g"
     volumes:
