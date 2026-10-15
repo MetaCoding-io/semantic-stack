@@ -27,6 +27,7 @@ developed against.
 - [📥 Loading your own data](#-loading-your-own-data)
 - [⚙️ Configuration](#️-configuration)
 - [📸 Screenshots](#-screenshots)
+- [🏗️ Architecture](#️-architecture)
 - [🗂️ Repository layout](#️-repository-layout)
 - [⚠️ Known limitations](#️-known-limitations)
 - [🔁 Keeping it fresh](#-keeping-it-fresh)
@@ -167,6 +168,15 @@ Every tool here speaks plain SPARQL 1.1 or works on files, so none is tied to on
 | RMLMapper, SDM-RDFizer, rudof, EYE, jelly-cli, toolbox | files in `/data` | load the output with `scripts/load.sh`; `rudof` and the toolbox can also query endpoints directly |
 
 </details>
+
+---
+
+## 🏗️ Architecture
+
+One store in the middle; everything else reads it, fronts it, or works on files.
+[docs/architecture.md](docs/architecture.md) has the diagrams: the default stack around Fuseki, what
+each profile plugs into, which store every tool can be pointed at (and the combinations that need
+care), and where data comes from.
 
 ---
 
@@ -370,6 +380,7 @@ artifacts for 90 days: `screenshots` (full-size captures with a gallery page) an
 │   └── out/                     # generated files (git-ignored)
 │
 ├── docs/
+│   ├── architecture.md          # diagrams: default stack, profiles, which store each tool can use, data flow
 │   ├── screenshots.md           # every UI in pictures, grouped by profile
 │   └── screenshots/             # the images (readme/ holds the crops for the README grid)
 ├── screenshots/                 # headless-browser screenshots: take.mjs, targets.json (make screenshots)
