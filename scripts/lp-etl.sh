@@ -37,8 +37,20 @@ done
 echo "Stored:   $LP/#/pipelines/edit/canvas?pipeline=$ENC"
 
 # 2. execute
-EXECUTION="$(curl -sfS -X POST "$LP/api/v1/executions?local-iri=$ENC" | python3 -c 'import json,sys; print(json.load(sys.stdin)["iri"])')" \
-  || { echo "starting the execution failed" >&2; exit 1; }
+# The frontend pipes the monitor's answer through; take the execution IRI from it whatever the shape
+# ({"iri": ...}, JSON-LD with "@id", ...), and fall back to the newest execution of this pipeline.
+RESPONSE="$(curl -sS -X POST -H 'Accept: application/json' "$LP/api/v1/executions?local-iri=$ENC")"
+EXECUTION="$(printf '%s' "$RESPONSE" | grep -oE 'https?://[^"<> ]+/resources/executions/[^"<> ]+' | head -1)"
+if [ -z "$EXECUTION" ]; then
+  sleep 2
+  EXECUTION="$(curl -sf -H 'Accept: application/ld+json' "$LP/api/v1/executions-list" | python3 -c '
+import json,sys
+docs=json.load(sys.stdin); docs=docs if isinstance(docs,list) else [docs]
+nodes=[n for d in docs for n in (d.get("@graph",[d]) if isinstance(d,dict) else [])]
+mine=[n["@id"] for n in nodes if any(p.get("@id")==sys.argv[1] for p in n.get("http://etl.linkedpipes.com/ontology/pipeline",[]))]
+print(sorted(mine)[-1] if mine else "")' "$PIPELINE" 2>/dev/null)"
+fi
+[ -n "$EXECUTION" ] || { echo "starting the execution failed: $RESPONSE" >&2; exit 1; }
 EXEC_ENC="$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$EXECUTION")"
 echo "Started:  $EXECUTION"
 
