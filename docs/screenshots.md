@@ -245,6 +245,11 @@ Profile `observability` · <http://localhost:3000> (anonymous viewer) and the Pr
 
 ### LinkedPipes ETL
 
-Profile `lp-etl` · <http://localhost:9080> · the pipeline list, empty until you create one.
+Profile `lp-etl` · <http://localhost:9080> · the execution list after `make lp-etl-run`, the example
+pipeline ([`lp-etl/pipelines/semantic-stack.jsonld`](../lp-etl/README.md): download the sample data and
+shapes, SHACL-validate, derive the dependency closure with SPARQL CONSTRUCT, load it into Fuseki) on the
+canvas, and the same canvas in execution mode, every component green.
 
 ![LinkedPipes ETL](screenshots/workbench/lp-etl.png)
+![LinkedPipes ETL pipeline](screenshots/workbench/lp-etl-pipeline.png)
+![LinkedPipes ETL execution](screenshots/workbench/lp-etl-execution.png)

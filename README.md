@@ -101,7 +101,7 @@ docker compose --profile <name> up -d        # or: make <name>-up
 | 🕸️ `graph-explorer` | `make graph-explorer-up` | **AWS Graph Explorer** on <http://localhost:8095/explorer>, click-to-expand instance graph | You want to show a graph to someone, not a result table |
 | 📄 `docs` | `make docs-up` | **pyLODE server** on <http://localhost:8096>: ontology documentation by URL | You want docs for an ontology without the CLI |
 | 🧮 `rpt` | `make rpt-up` | **RDF Processing Toolkit** server on <http://localhost:8642>: YASGUI, GraphQL and a Linked Data viewer over Fuseki | You want GraphQL over SPARQL, or RPT's SPARQL-sequence pipelines |
-| 🪈 `lp-etl` | `make lp-etl-up` | **LinkedPipes ETL** on <http://localhost:9080>, four containers | You want to draw ETL pipelines instead of scripting them |
+| 🪈 `lp-etl` | `make lp-etl-up` | **LinkedPipes ETL** on <http://localhost:9080>, four containers; `make lp-etl-run` runs the example pipeline | You want to draw ETL pipelines instead of scripting them |
 | ✅ `validation` | `make validation-up` | **ITB SHACL validator** on <http://localhost:8097/shacl/stack/upload>: web form, REST and SOAP over `data/sample/shapes.ttl` | You need validation as a service for other teams or systems |
 | 📈 `observability` | `make observability-up` | **Prometheus** (<http://localhost:9091>) + **sparql-prometheus-exporter** (SPARQL counts as gauges) + **Grafana** (<http://localhost:3000>, SPARQL datasource provisioned) | You want dashboards over the data or the stores |
 | 🤖 `mcp` | `make mcp-up` | **sparql-mcp** (SPARQL 1.1 + Graph Store over Fuseki, SSE on :8103), **rudof-mcp** (ShEx/SHACL/SPARQL, :8102), **open-ontologies** (ontology engineering, :8101) | You want Claude Code or another agent to work with the stack, see below |
@@ -231,7 +231,7 @@ care), and where data comes from.
 | **SDM-RDFizer** | `docker compose --profile tools run --rm sdm-rdfizer` | Second RML engine (100 % on every module of the new RML spec in the 2026 KGCW challenge); runs the same mapping via `data/rml/sdm-rdfizer.ini`. |
 | **SPARQL Anything** | <http://localhost:8093/sparql> | Query CSV, JSON, XML, HTML, spreadsheets, … as RDF with no mapping (Facade-X). Endpoint `/sparql.anything`; try `data/queries/30-sparql-anything-csv.rq`. |
 | **RPT CLI** | `docker compose --profile tools run --rm rpt-cli rmltk rml to sparql rml/mapping.rml.ttl` | RML → SPARQL CONSTRUCT, SPARQL-sequence pipelines, `integrate <data> <query.rq>`. |
-| **LinkedPipes ETL** | <http://localhost:9080> | Profile `lp-etl`. Visual pipelines: download, SPARQL transform, SHACL, upload to a SPARQL endpoint. |
+| **LinkedPipes ETL** | <http://localhost:9080> | Profile `lp-etl`. Visual pipelines: download, SPARQL transform, SHACL, upload to a SPARQL endpoint. [`lp-etl/pipelines/semantic-stack.jsonld`](lp-etl/pipelines/semantic-stack.jsonld) does all four over the sample data; `make lp-etl-run` stores it, runs it and waits. |
 | **Flexible GraphRAG** | <http://localhost:8105> | Profile `graphrag`. Documents → LLM-extracted knowledge graph in Fuseki + Qdrant, hybrid search, chat, MCP. |
 | **Ontop** | profile `ontop` | Keep the data in SQL, query it as RDF. |
 

@@ -6,7 +6,7 @@
 #                   sparql-proxy skosmos sparklis sparnatural shacl-play pyshacl sparql-anything
 #   profile checks: qlever qlever-ui oxigraph oxigraph-data ontop ontop-data graphdb rdf4j-ui
 #                   virtuoso virtuoso-data geosparql geosparql-data geosparql-query solid prez prez-ui
-#                   grlc grlc-query graph-explorer pylode pylode-render rpt rpt-query lp-etl
+#                   grlc grlc-query graph-explorer pylode pylode-render rpt rpt-query lp-etl lp-etl-pipeline lp-etl-data
 #                   itb-shacl itb-validate prometheus sparql-exporter grafana
 #                   sparql-mcp rudof-mcp open-ontologies graphrag graphrag-ui graphrag-mcp qdrant ollama
 #   extra checks:   skosmos-data pyshacl-validate (needs python3 on the host)
@@ -115,6 +115,8 @@ for c in "${checks[@]}"; do
     rpt)         sparql rpt         "$H:${RPT_PORT:-8642}/sparql" ;;
     rpt-query)   ask    rpt-query   "$H:${RPT_PORT:-8642}/sparql" "ASK { ?s a <http://localhost:${TRIFID_PORT:-8084}/vocab/Service> }" ;;
     lp-etl)      http   lp-etl      "$H:${LP_ETL_PORT:-9080}/" ;;
+    lp-etl-pipeline) if ./scripts/lp-etl.sh; then ok lp-etl-pipeline "lp-etl/pipelines/semantic-stack.jsonld"; else bad lp-etl-pipeline "scripts/lp-etl.sh (see output above)"; fi ;;
+    lp-etl-data) ask  lp-etl-data "$H:${FUSEKI_PORT:-3030}/ds/sparql" "ASK { GRAPH <http://localhost:${TRIFID_PORT:-8084}/graph/lp-etl> { ?s <http://localhost:${TRIFID_PORT:-8084}/vocab/transitivelyDependsOn> ?o } }" ;;
     itb-shacl)   http   itb-shacl   "$H:${ITB_SHACL_PORT:-8097}/shacl/stack/api/info" '"domain"' ;;
     itb-validate) post  itb-validate "$H:${ITB_SHACL_PORT:-8097}/shacl/stack/api/validate" application/json \
                    "$(python3 -c 'import json; print(json.dumps({"contentToValidate": open("data/sample/semantic-stack.ttl").read(), "embeddingMethod": "STRING", "contentSyntax": "text/turtle", "validationType": "stack", "reportSyntax": "text/turtle"}))')" 'conforms' ;;

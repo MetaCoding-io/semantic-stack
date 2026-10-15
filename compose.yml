@@ -740,6 +740,7 @@ services:
   # SPARQL endpoint, ...). Four containers; images are dated snapshots of main (no semver releases).
   # The baked configuration addresses the other containers as storage / executor / executor-monitor,
   # hence the network aliases. The frontend is a browser app, so LP_ETL_DOMAIN is the host URL.
+  # Example pipeline: lp-etl/pipelines/semantic-stack.jsonld (`make lp-etl-run` stores and runs it).
   lp-etl-storage:
     profiles: [lp-etl]
     image: ghcr.io/linkedpipes/etl-storage:2026-10-01-398fe86

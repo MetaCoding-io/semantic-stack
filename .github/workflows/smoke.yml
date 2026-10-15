@@ -206,7 +206,7 @@ jobs:
           - { profile: graph-explorer, services: "fuseki graph-explorer",         build: "",           load: true,  checks: "graph-explorer" }
           - { profile: docs,           services: "landing pylode",                build: "pylode",     load: false, checks: "pylode pylode-render" }
           - { profile: rpt,            services: "fuseki rpt",                    build: "",           load: true,  checks: "rpt rpt-query" }
-          - { profile: lp-etl,         services: "",                              build: "",           load: false, checks: "lp-etl" }
+          - { profile: lp-etl,         services: "",                              build: "",           load: true,  checks: "lp-etl lp-etl-pipeline lp-etl-data" }
           - { profile: validation,     services: "itb-shacl",                     build: "",           load: false, checks: "itb-shacl itb-validate" }
           - { profile: observability,  services: "fuseki prometheus sparql-exporter grafana", build: "", load: true, checks: "prometheus sparql-exporter grafana" }
           - { profile: mcp,            services: "fuseki sparql-mcp rudof-mcp open-ontologies", build: "sparql-mcp", load: true, checks: "sparql-mcp rudof-mcp open-ontologies" }

@@ -1,0 +1,684 @@
+[
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack",
+        "@type": [
+          "http://linkedpipes.com/ontology/Pipeline"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "semantic-stack: validate, derive dependencies, load into Fuseki"
+          }
+        ],
+        "http://www.w3.org/2004/02/skos/core#note": [
+          {
+            "@value": "Example pipeline of the semantic-stack repository (lp-etl/pipelines/semantic-stack.jsonld). Run it with make lp-etl-run."
+          }
+        ],
+        "http://etl.linkedpipes.com/ontology/version": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "5"
+          }
+        ],
+        "http://linkedpipes.com/ontology/profile": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/profile/default"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/profile/default",
+        "@type": [
+          "http://linkedpipes.com/ontology/ExecutionProfile"
+        ],
+        "http://linkedpipes.com/ontology/rdfRepositoryPolicy": [
+          {
+            "@id": "http://linkedpipes.com/ontology/repository/SingleRepository"
+          }
+        ],
+        "http://linkedpipes.com/ontology/rdfRepositoryType": [
+          {
+            "@id": "http://linkedpipes.com/ontology/repository/NativeStore"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c1",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Download semantic-stack.ttl"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/e-httpGetFile/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c1/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "60"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "140"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c2",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Download shapes.ttl"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/e-httpGetFile/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c2/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "60"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "360"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Files to RDF"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/t-filesToRdfGraph/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "360"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "140"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Shapes to RDF"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/t-filesToRdfGraph/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "360"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "360"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "SHACL validation"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/t-shacl/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "660"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "360"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Dependency closure (CONSTRUCT)"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/t-sparqlConstruct/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "660"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "140"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "RDF to file"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/t-rdfToFile/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "960"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "140"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8",
+        "@type": [
+          "http://linkedpipes.com/ontology/Component"
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "Load into Fuseki"
+          }
+        ],
+        "http://linkedpipes.com/ontology/template": [
+          {
+            "@id": "http://etl.linkedpipes.com/resources/components/l-graphStoreProtocol/0.0.0"
+          }
+        ],
+        "http://linkedpipes.com/ontology/configurationGraph": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8/configuration"
+          }
+        ],
+        "http://linkedpipes.com/ontology/x": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "1260"
+          }
+        ],
+        "http://linkedpipes.com/ontology/y": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#int",
+            "@value": "140"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k1",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c1"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "FilesOutput"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "InputFiles"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k2",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c2"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "FilesOutput"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "InputFiles"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k3",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "OutputRdf"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "InputRdf"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k4",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "OutputRdf"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "Data"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k5",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "OutputRdf"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "Shapes"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k6",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "OutputRdf"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "InputRdf"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/k7",
+        "@type": [
+          "http://linkedpipes.com/ontology/Connection"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7"
+          }
+        ],
+        "http://linkedpipes.com/ontology/sourceBinding": [
+          {
+            "@value": "OutputFile"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetBinding": [
+          {
+            "@value": "InputFiles"
+          }
+        ]
+      },
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/connection/r1",
+        "@type": [
+          "http://linkedpipes.com/ontology/RunAfter"
+        ],
+        "http://linkedpipes.com/ontology/sourceComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5"
+          }
+        ],
+        "http://linkedpipes.com/ontology/targetComponent": [
+          {
+            "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c1/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c1/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/e-httpGetFile#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/e-httpGetFile#fileUri": [
+          {
+            "@value": "http://landing.internal/data/sample/semantic-stack.ttl"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/e-httpGetFile#fileName": [
+          {
+            "@value": "semantic-stack.ttl"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c2/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c2/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/e-httpGetFile#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/e-httpGetFile#fileUri": [
+          {
+            "@value": "http://landing.internal/data/sample/shapes.ttl"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/e-httpGetFile#fileName": [
+          {
+            "@value": "shapes.ttl"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c3/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/t-filesToRdfGraph#Configuration"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c4/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/t-filesToRdfGraph#Configuration"
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c5/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/t-shacl#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/t-shacl#failOnError": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": "true"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c6/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/t-sparqlConstruct#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/t-sparqlConstruct#query": [
+          {
+            "@value": "PREFIX ss: <http://localhost:8084/vocab/>\nPREFIX schema: <http://schema.org/>\nCONSTRUCT {\n  ?a ss:transitivelyDependsOn ?b .\n  ?a schema:name ?aName .\n  ?b schema:name ?bName .\n}\nWHERE {\n  ?a ss:dependsOn+ ?b .\n  ?a schema:name ?aName .\n  ?b schema:name ?bName .\n}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c7/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/t-rdfToFile#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/t-rdfToFile#fileName": [
+          {
+            "@value": "semantic-stack-dependencies.ttl"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/t-rdfToFile#fileType": [
+          {
+            "@value": "text/turtle"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8/configuration",
+    "@graph": [
+      {
+        "@id": "http://localhost:9080/resources/pipelines/semantic-stack/component/c8/configuration",
+        "@type": [
+          "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#Configuration"
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#endpoint": [
+          {
+            "@value": "http://fuseki:3030/ds/data"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#graph": [
+          {
+            "@value": "http://localhost:8084/graph/lp-etl"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#repository": [
+          {
+            "@value": "FUSEKI"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#authentification": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": "true"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#user": [
+          {
+            "@value": "admin"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#password": [
+          {
+            "@value": "admin"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#replace": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": "true"
+          }
+        ],
+        "http://plugins.linkedpipes.com/ontology/l-graphStoreProtocol#checkSize": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": "false"
+          }
+        ]
+      }
+    ]
+  }
+]

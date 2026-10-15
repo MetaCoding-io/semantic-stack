@@ -4,7 +4,7 @@ export QLEVER_UID ?= $(shell id -u)
 export QLEVER_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
-.PHONY: help up down restart ps logs load smoke screenshots screenshots-publish qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up profile virtuoso-up geosparql-up prez-up grlc-up graph-explorer-up docs-up rpt-up lp-etl-up validation-up observability-up mcp-up graphrag-up ollama-up solid-up build clean
+.PHONY: help up down restart ps logs load smoke screenshots screenshots-publish qlever-index qlever-up oxigraph-up graphdb-up tools validate jupyter-up ontop-up profile virtuoso-up geosparql-up prez-up grlc-up graph-explorer-up docs-up rpt-up lp-etl-up lp-etl-run validation-up observability-up mcp-up graphrag-up ollama-up solid-up build clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -93,6 +93,9 @@ rpt-up: ## Add RPT (SPARQL/GraphQL server with YASGUI over Fuseki) on http://loc
 
 lp-etl-up: ## Add LinkedPipes ETL on http://localhost:9080 (four containers)
 	$(COMPOSE) --profile lp-etl up -d
+
+lp-etl-run: ## Store and run the example pipeline (lp-etl/pipelines/semantic-stack.jsonld), wait for it to finish
+	./scripts/lp-etl.sh
 
 validation-up: ## Add the ITB SHACL validator on http://localhost:8097/shacl/stack/upload
 	$(COMPOSE) --profile validation up -d

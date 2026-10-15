@@ -1,5 +1,5 @@
 {
-  "_comment": "Groups of screenshot targets. `profiles` are compose profiles to enable, `services` the ones to start ('' = all in those profiles), `load` posts data/sample first, `index` builds the QLever index first. Each target: name, url, optional `settle` (ms to wait after load), `waitFor` (CSS selector), `clip` (viewport only instead of full page), `probe` (readiness URL to poll instead of `url`, for pages that need a browser session), `auth` ({user, pass} HTTP basic credentials). The CI matrix in .github/workflows/screenshots.yml mirrors the group names.",
+  "_comment": "Groups of screenshot targets. `profiles` are compose profiles to enable, `services` the ones to start ('' = all in those profiles), `load` posts data/sample first, `index` builds the QLever index first, `prepare` is a shell command run from the repository root before the captures (its KEY=VALUE output lines are available as ${KEY} in target URLs). Each target: name, url, optional `settle` (ms to wait after load), `waitFor` (CSS selector), `clip` (viewport only instead of full page), `probe` (readiness URL to poll instead of `url`, for pages that need a browser session), `auth` ({user, pass} HTTP basic credentials). The CI matrix in .github/workflows/screenshots.yml mirrors the group names.",
   "groups": {
     "default": {
       "profiles": [],
@@ -59,11 +59,14 @@
       "profiles": ["jupyter", "observability", "lp-etl"],
       "services": "",
       "load": true,
+      "prepare": "scripts/lp-etl.sh",
       "targets": [
         { "name": "jupyterlab",        "url": "http://localhost:8888/lab", "settle": 8000 },
         { "name": "grafana",           "url": "http://localhost:3000/", "settle": 4000 },
         { "name": "prometheus-targets","url": "http://localhost:9091/targets", "settle": 2000 },
-        { "name": "lp-etl",            "url": "http://localhost:9080/", "settle": 5000 }
+        { "name": "lp-etl",            "url": "http://localhost:9080/#/executions", "probe": "http://localhost:9080/", "settle": 5000 },
+        { "name": "lp-etl-pipeline",   "url": "http://localhost:9080/#/pipelines/edit/canvas?pipeline=http%3A%2F%2Flocalhost%3A9080%2Fresources%2Fpipelines%2Fsemantic-stack", "probe": "http://localhost:9080/", "waitFor": "#canvas svg", "settle": 8000, "clip": true },
+        { "name": "lp-etl-execution",  "url": "http://localhost:9080/#/pipelines/edit/canvas?pipeline=http%3A%2F%2Flocalhost%3A9080%2Fresources%2Fpipelines%2Fsemantic-stack&execution=${LP_ETL_EXECUTION}", "probe": "http://localhost:9080/", "waitFor": "#canvas svg", "settle": 8000, "clip": true }
       ]
     }
   }

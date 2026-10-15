@@ -7,8 +7,11 @@
 //
 // Groups and targets live in targets.json. Each target is awaited until it (or its `probe` URL) answers HTTP (< 500),
 // opened at 1440x900, given `settle` ms to render, then captured. Failures are recorded, not fatal,
-// unless --strict (used for the default group in CI).
+// unless --strict (used for the default group in CI). A group's optional `prepare` is a shell command run from
+// the repository root before its captures (e.g. scripts/lp-etl.sh, which runs the example pipeline); every
+// KEY=VALUE line it prints can be used as ${KEY} in the group's target URLs.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,13 +60,25 @@ for (const groupName of groups) {
   const group = config.groups[groupName];
   const dir = join(outDir, groupName);
   mkdirSync(dir, { recursive: true });
+  const vars = {};
+  if (group.prepare) {
+    process.stdout.write(`${groupName}: prepare: ${group.prepare}\n`);
+    const run = spawnSync("bash", ["-c", group.prepare], { cwd: join(here, ".."), encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], timeout: 15 * 60 * 1000 });
+    for (const line of (run.stdout || "").split("\n")) {
+      const m = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+      if (m) vars[m[1]] = m[2]; else if (line.trim()) console.log(`  ${line}`);
+    }
+    if (run.status !== 0) console.log(`  ✗ prepare exited with ${run.status ?? run.signal}; capturing anyway`);
+  }
+  const expand = (s) => s?.replace(/\$\{([A-Z][A-Z0-9_]*)\}/g, (_, k) => encodeURIComponent(vars[k] ?? ""));
   for (const t of group.targets) {
     if (only.length && !only.includes(t.name)) continue;
     const started = Date.now();
     const file = join(dir, `${t.name}.png`);
-    const row = { group: groupName, name: t.name, url: t.url, file: `${groupName}/${t.name}.png` };
-    process.stdout.write(`${groupName}/${t.name.padEnd(22)} ${t.url}\n`);
-    const up = await waitForHttp(t.probe ?? t.url, timeoutS);   // `probe`: a cookie-less readiness URL when the page itself needs a session
+    const url = expand(t.url);
+    const row = { group: groupName, name: t.name, url, file: `${groupName}/${t.name}.png` };
+    process.stdout.write(`${groupName}/${t.name.padEnd(22)} ${url}\n`);
+    const up = await waitForHttp(expand(t.probe) ?? url, timeoutS);   // `probe`: a cookie-less readiness URL when the page itself needs a session
     if (!up.ok) { row.error = `not reachable within ${timeoutS}s (${up.status})`; results.push(row); console.log(`  ✗ ${row.error}`); continue; }
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
@@ -72,7 +87,7 @@ for (const groupName of groups) {
     });
     const page = await context.newPage();
     try {
-      await page.goto(t.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
       if (t.waitFor) await page.waitForSelector(t.waitFor, { timeout: 20000 }).catch(() => {});
       if (t.settle) await page.waitForTimeout(t.settle);
