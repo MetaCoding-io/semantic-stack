@@ -76,6 +76,12 @@ jobs:
       - name: Summary
         if: always()
         run: cat screenshots/out/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+      - name: TEMPORARY print the LP-ETL captures (docs size) as base64
+        if: always() && matrix.group == 'workbench'
+        run: |
+          python3 -m pip install --quiet "pillow>=10"
+          python3 scripts/publish-screenshots.py screenshots/out /tmp/docs-shots || true
+          for f in /tmp/docs-shots/workbench/lp-etl*.png; do echo "=== BEGIN $f"; base64 -w 76 "$f"; echo "=== END $f"; done
       - name: Logs on failure
         if: failure()
         run: |
