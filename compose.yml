@@ -403,7 +403,7 @@ services:
   #   docker compose --profile tools run --rm rudof shacl sample/shapes.ttl
   rudof:
     profiles: [tools]
-    image: angelip2303/rudof:0.3.25
+    image: angelip2303/rudof:0.3.27
     platform: linux/amd64   # upstream publishes amd64 only
     working_dir: /data
     volumes:
@@ -554,7 +554,7 @@ services:
   # for a licence, request the free one from Ontotext and upload it in Setup > License.
   graphdb:
     profiles: [graphdb]
-    image: ontotext/graphdb:11.5.1
+    image: ontotext/graphdb:11.5.2
     <<: *restart
     environment:
       GDB_JAVA_OPTS: "-Xms1g -Xmx2g"
@@ -883,7 +883,7 @@ services:
   #   claude mcp add --transport http rudof http://localhost:8102/mcp
   rudof-mcp:
     profiles: [mcp]
-    image: angelip2303/rudof:0.3.25
+    image: angelip2303/rudof:0.3.27
     platform: linux/amd64   # upstream publishes amd64 only
     <<: *restart
     working_dir: /data
@@ -1010,7 +1010,7 @@ services:
   # GPU: add `gpus: all` (NVIDIA Container Toolkit) or use the 0.40.4-rocm tag with /dev/kfd and /dev/dri.
   ollama:
     profiles: [ollama]
-    image: ollama/ollama:0.40.4
+    image: ollama/ollama:0.40.6
     <<: *restart
     volumes:
       - ollama_models:/root/.ollama
