@@ -148,7 +148,7 @@ services:
   # (`scripts/smoke.sh oxigraph`, which `make oxigraph-up` does) before loading data.
   oxigraph:
     profiles: [oxigraph]
-    image: oxigraph/oxigraph:0.5.11
+    image: oxigraph/oxigraph:0.5.13
     <<: *restart
     volumes:
       - oxigraph_data:/data
@@ -220,7 +220,7 @@ services:
   # (Facade-X). SPARQL endpoint /sparql.anything, YASGUI at /sparql. ./data is visible as /data.
   #   see data/queries/30-sparql-anything-csv.rq
   sparql-anything:
-    image: facadex/sparql-anything:v1.2.0
+    image: facadex/sparql-anything:v1.3.0
     <<: *restart
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx1g"
@@ -281,7 +281,7 @@ services:
   # skosmos/config.ttl against Fuseki (plain SPARQL, "Generic" dialect). Shows the sample
   # thesaurus data/sample/semantic-stack-skos.ttl once `scripts/load.sh` has run.
   skosmos:
-    image: quay.io/natlibfi/skosmos:v3.4
+    image: quay.io/natlibfi/skosmos:v3.5
     <<: *restart
     volumes:
       - ./skosmos/config.ttl:/var/www/html/config.ttl:ro
@@ -403,7 +403,7 @@ services:
   #   docker compose --profile tools run --rm rudof shacl sample/shapes.ttl
   rudof:
     profiles: [tools]
-    image: angelip2303/rudof:0.3.25
+    image: angelip2303/rudof:0.3.35
     platform: linux/amd64   # upstream publishes amd64 only
     working_dir: /data
     volumes:
@@ -452,7 +452,7 @@ services:
   # (browse it at http://localhost:8080/data/out/widoco/doc/).
   widoco:
     profiles: [tools]
-    image: ghcr.io/dgarijo/widoco:v1.4.25
+    image: ghcr.io/dgarijo/widoco:v1.4.26
     platform: linux/amd64   # upstream publishes amd64 only
     # The image runs as its own unprivileged user, which can't create data/out/widoco once the other
     # tools (which run as root) have created data/out; run as root like them, output ownership matches.
@@ -554,7 +554,7 @@ services:
   # for a licence, request the free one from Ontotext and upload it in Setup > License.
   graphdb:
     profiles: [graphdb]
-    image: ontotext/graphdb:11.5.1
+    image: ontotext/graphdb:11.5.2
     <<: *restart
     environment:
       GDB_JAVA_OPTS: "-Xms1g -Xmx2g"
@@ -807,7 +807,7 @@ services:
   #           -d "$(jq -n --rawfile d data/sample/semantic-stack.ttl '{contentToValidate:$d, embeddingMethod:"STRING", contentSyntax:"text/turtle", validationType:"stack", reportSyntax:"text/turtle"}')"
   itb-shacl:
     profiles: [validation]
-    image: isaitb/shacl-validator:1.13.0
+    image: isaitb/shacl-validator:1.13.1.1
     <<: *restart
     environment:
       validator.resourceRoot: /validator/resources/
@@ -825,7 +825,7 @@ services:
   # QLever's own /metrics can be scraped too: see prometheus/prometheus.yml.
   prometheus:
     profiles: [observability]
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3.15.1
     <<: *restart
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -883,7 +883,7 @@ services:
   #   claude mcp add --transport http rudof http://localhost:8102/mcp
   rudof-mcp:
     profiles: [mcp]
-    image: angelip2303/rudof:0.3.25
+    image: angelip2303/rudof:0.3.35
     platform: linux/amd64   # upstream publishes amd64 only
     <<: *restart
     working_dir: /data
@@ -902,7 +902,7 @@ services:
   #   claude mcp add --transport http open-ontologies http://localhost:8101/mcp
   open-ontologies:
     profiles: [mcp]
-    image: ghcr.io/fabio-rovai/open-ontologies:2.0.1
+    image: ghcr.io/fabio-rovai/open-ontologies:2.1.0
     <<: *restart
     environment:
       OPEN_ONTOLOGIES_STORAGE_MODE: persistent
@@ -923,7 +923,7 @@ services:
   #   UI/API behind one port: http://localhost:8105/  (API docs /docs)   MCP: http://localhost:3001/mcp
   qdrant:
     profiles: [graphrag]
-    image: qdrant/qdrant:v1.19.2
+    image: qdrant/qdrant:v1.20.0
     <<: *restart
     environment:
       QDRANT__TELEMETRY_DISABLED: "true"
@@ -934,7 +934,7 @@ services:
 
   flexible-graphrag:
     profiles: [graphrag]
-    image: integratedsemantics/flexible-graphrag-backend:0.8.4
+    image: integratedsemantics/flexible-graphrag-backend:0.9.0
     <<: *restart
     depends_on:
       fuseki:
@@ -975,7 +975,7 @@ services:
 
   flexible-graphrag-ui:
     profiles: [graphrag]
-    image: integratedsemantics/flexible-graphrag-ui-react:0.8.4
+    image: integratedsemantics/flexible-graphrag-ui-react:0.9.0
     <<: *restart
     depends_on: [flexible-graphrag]
     environment:
@@ -1010,7 +1010,7 @@ services:
   # GPU: add `gpus: all` (NVIDIA Container Toolkit) or use the 0.40.4-rocm tag with /dev/kfd and /dev/dri.
   ollama:
     profiles: [ollama]
-    image: ollama/ollama:0.40.4
+    image: ollama/ollama:0.40.11
     <<: *restart
     volumes:
       - ollama_models:/root/.ollama
