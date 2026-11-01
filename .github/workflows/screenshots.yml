@@ -116,7 +116,7 @@ jobs:
           name: screenshots
           path: screenshots/out
           retention-days: 90
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Docs-ready copies (what scripts/publish-screenshots.py puts in docs/screenshots)
