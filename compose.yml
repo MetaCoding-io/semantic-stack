@@ -892,7 +892,7 @@ services:
       RUST_LOG: info
     volumes:
       - ./data:/data
-    command: ["mcp", "--transport", "streamable-http", "--bind", "0.0.0.0", "--port", "8000", "--route", "/mcp", "--allowed-network", "0.0.0.0/0"]
+    command: ["mcp", "--transport", "streamable-http", "--bind", "0.0.0.0", "--port", "8000", "--route", "/mcp", "--allowed-host", "localhost:8102"]
     ports:
       - "${RUDOF_MCP_PORT:-8102}:8000"
 
