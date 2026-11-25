@@ -281,7 +281,7 @@ services:
   # skosmos/config.ttl against Fuseki (plain SPARQL, "Generic" dialect). Shows the sample
   # thesaurus data/sample/semantic-stack-skos.ttl once `scripts/load.sh` has run.
   skosmos:
-    image: quay.io/natlibfi/skosmos:v3.5
+    image: quay.io/natlibfi/skosmos:v3.6
     <<: *restart
     volumes:
       - ./skosmos/config.ttl:/var/www/html/config.ttl:ro
@@ -554,7 +554,7 @@ services:
   # for a licence, request the free one from Ontotext and upload it in Setup > License.
   graphdb:
     profiles: [graphdb]
-    image: ontotext/graphdb:11.5.2
+    image: ontotext/graphdb:11.5.3
     <<: *restart
     environment:
       GDB_JAVA_OPTS: "-Xms1g -Xmx2g"
@@ -599,7 +599,7 @@ services:
   #   query: http://localhost:3031/ds/sparql   update: /ds/update   data: /ds/data (admin / $FUSEKI_ADMIN_PASSWORD)
   fuseki-geosparql:
     profiles: [geosparql]
-    image: ghcr.io/zazuko/fuseki-geosparql:v5.2.0
+    image: ghcr.io/zazuko/fuseki-geosparql:v5.3.0
     <<: *restart
     environment:
       ADMIN_PASSWORD: ${FUSEKI_ADMIN_PASSWORD:-admin}
@@ -807,7 +807,7 @@ services:
   #           -d "$(jq -n --rawfile d data/sample/semantic-stack.ttl '{contentToValidate:$d, embeddingMethod:"STRING", contentSyntax:"text/turtle", validationType:"stack", reportSyntax:"text/turtle"}')"
   itb-shacl:
     profiles: [validation]
-    image: isaitb/shacl-validator:1.13.1.1
+    image: isaitb/shacl-validator:1.13.2
     <<: *restart
     environment:
       validator.resourceRoot: /validator/resources/
@@ -923,7 +923,7 @@ services:
   #   UI/API behind one port: http://localhost:8105/  (API docs /docs)   MCP: http://localhost:3001/mcp
   qdrant:
     profiles: [graphrag]
-    image: qdrant/qdrant:v1.20.1
+    image: qdrant/qdrant:v1.20.2
     <<: *restart
     environment:
       QDRANT__TELEMETRY_DISABLED: "true"
@@ -934,7 +934,7 @@ services:
 
   flexible-graphrag:
     profiles: [graphrag]
-    image: integratedsemantics/flexible-graphrag-backend:0.10.0
+    image: integratedsemantics/flexible-graphrag-backend:0.11.0
     <<: *restart
     depends_on:
       fuseki:
@@ -975,7 +975,7 @@ services:
 
   flexible-graphrag-ui:
     profiles: [graphrag]
-    image: integratedsemantics/flexible-graphrag-ui-react:0.10.0
+    image: integratedsemantics/flexible-graphrag-ui-react:0.11.0
     <<: *restart
     depends_on: [flexible-graphrag]
     environment:
@@ -1010,7 +1010,7 @@ services:
   # GPU: add `gpus: all` (NVIDIA Container Toolkit) or use the 0.40.4-rocm tag with /dev/kfd and /dev/dri.
   ollama:
     profiles: [ollama]
-    image: ollama/ollama:0.40.16
+    image: ollama/ollama:0.40.17
     <<: *restart
     volumes:
       - ollama_models:/root/.ollama
